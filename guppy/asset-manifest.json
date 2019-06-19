@@ -1,16 +1,16 @@
 {
-  "main.css": "/guppy/static/css/main.57a4813c.chunk.css",
-  "main.js": "/guppy/static/js/main.227000c5.chunk.js",
-  "main.js.map": "/guppy/static/js/main.227000c5.chunk.js.map",
-  "runtime~main.js": "/guppy/static/js/runtime~main.95d06f4b.js",
-  "runtime~main.js.map": "/guppy/static/js/runtime~main.95d06f4b.js.map",
-  "static/js/2.781d5dc9.chunk.js": "/guppy/static/js/2.781d5dc9.chunk.js",
-  "static/js/2.781d5dc9.chunk.js.map": "/guppy/static/js/2.781d5dc9.chunk.js.map",
-  "static/js/3.14a6db4a.chunk.js": "/guppy/static/js/3.14a6db4a.chunk.js",
-  "fae5f486ffe029ea9379.module.wasm": "/guppy/fae5f486ffe029ea9379.module.wasm",
-  "static/js/3.14a6db4a.chunk.js.map": "/guppy/static/js/3.14a6db4a.chunk.js.map",
+  "main.css": "/guppy/static/css/main.d93ffcb2.chunk.css",
+  "main.js": "/guppy/static/js/main.c8358ee6.chunk.js",
+  "main.js.map": "/guppy/static/js/main.c8358ee6.chunk.js.map",
+  "runtime~main.js": "/guppy/static/js/runtime~main.6b850ff2.js",
+  "runtime~main.js.map": "/guppy/static/js/runtime~main.6b850ff2.js.map",
+  "static/js/2.c3ffcb81.chunk.js": "/guppy/static/js/2.c3ffcb81.chunk.js",
+  "static/js/2.c3ffcb81.chunk.js.map": "/guppy/static/js/2.c3ffcb81.chunk.js.map",
+  "static/js/3.c5c8f949.chunk.js": "/guppy/static/js/3.c5c8f949.chunk.js",
+  "4df1e813a2e15522d3e6.module.wasm": "/guppy/4df1e813a2e15522d3e6.module.wasm",
+  "static/js/3.c5c8f949.chunk.js.map": "/guppy/static/js/3.c5c8f949.chunk.js.map",
   "index.html": "/guppy/index.html",
-  "precache-manifest.78c58d878c7df2a6cefe5503b523cc98.js": "/guppy/precache-manifest.78c58d878c7df2a6cefe5503b523cc98.js",
+  "precache-manifest.c5f123b4634727fd8e6e76b073b51a43.js": "/guppy/precache-manifest.c5f123b4634727fd8e6e76b073b51a43.js",
   "service-worker.js": "/guppy/service-worker.js",
-  "static/css/main.57a4813c.chunk.css.map": "/guppy/static/css/main.57a4813c.chunk.css.map"
+  "static/css/main.d93ffcb2.chunk.css.map": "/guppy/static/css/main.d93ffcb2.chunk.css.map"
 }

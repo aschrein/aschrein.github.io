@@ -6,7 +6,7 @@ categories: jekyll update
 ---
 
 ## About
-This post is a small writeup addressed to programmers who are interested to learn more about how GPU handles branching and targeted as an introduction to the topic. I recommend skimming through \[[1]\], \[[2]\] and \[[8]\] to get the idea of what GPU execution model looks like. A curious reader shall find all references at the end of the post. If you find any mistakes please DM me or leave a comment on Twitter.
+This post is a small writeup addressed to programmers who are interested to learn more about how GPU handles branching and targeted as an introduction to the topic. I recommend skimming through \[[1]\], \[[2]\] and \[[8]\] to get an idea of what GPU execution model looks like in general because here we're gonna take a closer look at one particular detail. A curious reader shall find all references at the end of the post. If you find any mistakes please reach out.
 
 ## Table of content
 * this unordered seed list will be replaced
@@ -57,10 +57,10 @@ Other names:
 * lane could be SW thread
 
 ## What is so special about GPU core compared to CPU core?
-Any current generation single GPU core is less beefy compared to what you may encounter in CPU world: tiny caches, simple ILP/multi-issue\[[6]\] and prefetch\[[5]\], no speculation or branch/return prediction. This frees up quite a lot of the die area which gets filled with more cores. Memory load/store machinery is able to handle bandwidths of an order of magnitude larger(not true for integrated/mobile GPUs) than that of a typical CPU at a cost of more latency. GPU employs SMT\[[2]\] to hide this latency - while one wave is stalled, another utilizes free computation resources of a core. Typically the number of waves handled by one core depends on registers used and determined dynamically by allocating on a fixed register file\[[8]\]. The instruction scheduling is hybrid dynamic and static\[[6]\]. SMT cores execute in SIMD mode yielding high number of FLOPS.
+Any current generation single GPU core is less beefy compared to what you may encounter in CPU world: simple ILP/multi-issue\[[6]\] and prefetch\[[5]\], no speculation or branch/return prediction. All this coupled with tiny caches frees up quite a lot of the die area which gets filled with more cores. Memory load/store machinery is able to handle bandwidths of an order of magnitude larger(not true for integrated/mobile GPUs) than that of a typical CPU at a cost of more latency. GPU employs SMT\[[2]\] to hide this latency - while one wave is stalled, another utilizes free computation resources of a core. Typically the number of waves handled by one core depends on registers used and determined dynamically by allocating on a fixed register file\[[8]\]. The instruction scheduling is hybrid dynamic and static\[[6]\] \[[11] 4.4\]. SMT cores execute in SIMD mode yielding high number of FLOPS.
 ![Figure 1](/assets/interleaving.png)  
 ###### Figure 1. Execution history 4:2
-The image shows history of execution mask where x axis is time from left to right and y axis is lane id from top to bottom. If it does not make sense to you, please return to it after reading next sections.  
+The image shows history of execution mask where the x axis is time from left to right and the y axis is lane id from top to bottom. If it does not make sense to you, please return to it after reading the next sections.  
 This is an illustration of how a GPU core execution history might look like for a fictional configuration: four waves share one sampler and two ALU units. Wave scheduler dispatches two instructions from two waves each cycle. When a wave stalls on memory access or long ALU operation, scheduler switches to another pair of waves making ALU units almost 100% busy all the time.  
 ![Figure 2](/assets/interleaving_2.png)  
 ###### Figure 2. Execution history 4:1
@@ -111,10 +111,11 @@ if (lane_id < 16) {
 }
 ```
 You'll notice that history is needed. With execution mask approach usually some kind of stack is employed by the HW. A naive approach is to keep a stack of (exec_mask, address) and add reconvergence instructions that pop a mask from the stack and change the instruction pointer for the wave. In that way a wave will have enough information to traverse the whole CFG for each lane.  
+From performance point of view, it takes a couple of cycles just to process a control flow instruction because of all the bookkeeping. And don't forget that the stack has limited depth.  
 Now take a look at these control flow graphs(image from Wikipedia):  
 ![Figure 4](/assets/Some_types_of_control_flow_graphs.png)  
 ###### Figure 4. Some types of control flow graphs
-So what is the minimal set of mask control instructions we need to handle all cases? Here is how it looks in my toy ISA with implicit parallelization and explicit mask control:
+So what is the minimal set of mask control instructions we need to handle all cases? Here is how it looks in my toy ISA with implicit parallelization, explicit mask control and fully dynamic data hazard synchronization:
 ```nasm
 push_mask BRANCH_END         ; Push current mask and reconvergence pointer
 pop_mask                     ; Pop mask and jump to reconvergence instruction
@@ -144,7 +145,7 @@ Bottom line:
 * Divergence - emerging difference in execution paths taken by different lanes of the same wave
 * Coherence - lack of divergence :)
 
-## An example of a divergent workload
+## Execution mask handling examples
 I compiled the previous code snippets into my toy ISA and run it with my simulator which produces cool pictures. Take a look at how it handles execution mask.
 ###### Example 1
 ```nasm
@@ -238,7 +239,7 @@ Let's spawn 256 threads and measure the duration:
 ![Figure 8](/assets/rand.png)  
 ###### Figure 8. Divergent threads execution time
 The x axis is SW thread id, the y axis is clock cycles; the different bars show how much time is wasted by grouping threads with different wave widths compared to single threaded execution.  
-The executuion time of a wave is equal to the maximum execution time among confined lanes.  
+The execution time of a wave is equal to the maximum execution time among confined lanes. You can see that the performance is already ruined at SIMD8, further widening just makes it slightly worse.  
 ![Figure 9](/assets/sorted.png)
 ###### Figure 9. Coherent threads execution time  
 This figure shows the same bars but this time iteration counts are sorted over thread ids, so that threads with similar iteration counts get dispatched to the same wave.  
@@ -289,6 +290,10 @@ It's worth mentioning that there are some techniques to grapple with divergence 
 [10][Reducing Branch Divergence in GPU Programs][10]
 
 [10]: https://www.eecis.udel.edu/~cavazos/cisc879-spring2012/papers/a3-han.pdf
+
+[11]["Vega" Instruction Set Architecture][11]
+
+[11]: https://developer.amd.com/wp-content/resources/Vega_Shader_ISA_28July2017.pdf
 
 
 
