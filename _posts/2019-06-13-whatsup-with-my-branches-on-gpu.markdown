@@ -57,7 +57,7 @@ Other names:
 * lane could be SW thread
 
 ## What is so special about GPU core compared to CPU core?
-Any current generation single GPU core is less beefy compared to what you may encounter in CPU world: simple ILP/multi-issue\[[6]\] and prefetch\[[5]\], no speculation or branch/return prediction. All this coupled with tiny caches frees up quite a lot of the die area which gets filled with more cores. Memory load/store machinery is able to handle bandwidths of an order of magnitude larger(not true for integrated/mobile GPUs) than that of a typical CPU at a cost of more latency. GPU employs SMT\[[2]\] to hide this latency - while one wave is stalled, another utilizes free computation resources of a core. Typically the number of waves handled by one core depends on registers used and determined dynamically by allocating on a fixed register file\[[8]\]. The instruction scheduling is hybrid dynamic and static\[[6]\] \[[11] 4.4\]. SMT cores execute in SIMD mode yielding high number of FLOPS.
+Any current generation single GPU core is less beefy compared to what you may encounter in CPU world: simple ILP/multi-issue\[[6]\] and prefetch\[[5]\], no speculation or branch/return prediction. All of this coupled with tiny caches frees up quite a lot of the die area which gets filled with more cores. Memory load/store machinery is able to handle bandwidths of an order of magnitude larger(not true for integrated/mobile GPUs) than that of a typical CPU at a cost of more latency. GPU employs SMT\[[2]\] to hide this latency - while one wave is stalled, another utilizes free computation resources of a core. Typically the number of waves handled by one core depends on registers used and determined dynamically by allocating on a fixed register file\[[8]\]. The instruction scheduling is hybrid dynamic and static\[[6]\] \[[11] 4.4\]. SMT cores execute in SIMD mode yielding high number of FLOPS.
 ![Figure 1](/assets/interleaving.png)  
 ###### Figure 1. Execution history 4:2
 The image shows history of execution mask where the x axis is time from left to right and the y axis is lane id from top to bottom. If it does not make sense to you, please return to it after reading the next sections.  
@@ -93,7 +93,7 @@ if (lane_id & 1) {                // 11111111
 }
 // Do some more                   // 11111111
 ```
-Seems simple is it not? Not so fast. If you'll take a look at more complicated examples:
+Now, take a look at more complicated examples:
 ###### Example 2
 ```c++
 uint lane_id = get_lane_id();
@@ -110,7 +110,7 @@ if (lane_id < 16) {
     // Do smth else
 }
 ```
-You'll notice that history is needed. With execution mask approach usually some kind of stack is employed by the HW. A naive approach is to keep a stack of (exec_mask, address) and add reconvergence instructions that pop a mask from the stack and change the instruction pointer for the wave. In that way a wave will have enough information to traverse the whole CFG for each lane.  
+You'll notice that history is needed. With execution mask approach usually some kind of stack is employed by the HW. A naive approach is to keep a stack of tuples (exec_mask, address) and add reconvergence instructions that pop a mask from the stack and change the instruction pointer for the wave. In that way a wave will have enough information to traverse the whole CFG for each lane.  
 From performance point of view, it takes a couple of cycles just to process a control flow instruction because of all the bookkeeping. And don't forget that the stack has limited depth.  
 Now take a look at these control flow graphs(image from Wikipedia):  
 ![Figure 4](/assets/Some_types_of_control_flow_graphs.png)  
@@ -122,9 +122,9 @@ pop_mask                     ; Pop mask and jump to reconvergence instruction
 mask_nz r0.x                 ; Set execution bit, pop mask if all bits are zero
 
 ; Branch instruction is more complicated
-; Push mask for (r0.x == 0) to handle else basic block
 ; Push current mask for reconvergence
-; Set mask with (r0.x != 0)
+; Push mask for (r0.x == 0) for else block, if any lane takes the path
+; Set mask with (r0.x != 0), fallback to else in case no bit is 1
 br_push r0.x, ELSE, CONVERGE 
 ```
 Lets take a look at how d) case might look like.
@@ -139,7 +139,7 @@ C:
 D:
     ret
 ```
-Looks alright. I'm not an expert in control flow analysis or ISA design so I'm sure there is a case that could not be tamed with my toy ISA, although it does not matter as structured CFG should be enough for everyone. Right?
+I'm not an expert in control flow analysis or ISA design so I'm sure there is a case that could not be tamed with my toy ISA, although it does not matter as structured CFG should be enough for everyone.
 
 Bottom line:  
 * Divergence - emerging difference in execution paths taken by different lanes of the same wave
