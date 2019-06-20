@@ -58,6 +58,8 @@ Other names:
 
 ## What is so special about GPU core compared to CPU core?
 Any current generation single GPU core is less beefy compared to what you may encounter in CPU world: simple ILP/multi-issue\[[6]\] and prefetch\[[5]\], no speculation or branch/return prediction. All of this coupled with tiny caches frees up quite a lot of the die area which gets filled with more cores. Memory load/store machinery is able to handle bandwidths of an order of magnitude larger(not true for integrated/mobile GPUs) than that of a typical CPU at a cost of more latency. GPU employs SMT\[[2]\] to hide this latency - while one wave is stalled, another utilizes free computation resources of a core. Typically the number of waves handled by one core depends on registers used and determined dynamically by allocating on a fixed register file\[[8]\]. The instruction scheduling is hybrid dynamic and static\[[6]\] \[[11] 4.4\]. SMT cores execute in SIMD mode yielding high number of FLOPS.
+![Figure 1](/assets/legend.png)  
+###### Diagram legend
 ![Figure 1](/assets/interleaving.png)  
 ###### Figure 1. Execution history 4:2
 The image shows history of execution mask where the x axis is time from left to right and the y axis is lane id from top to bottom. If it does not make sense to you, please return to it after reading the next sections.  
