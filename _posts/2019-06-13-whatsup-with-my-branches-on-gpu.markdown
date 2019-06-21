@@ -70,6 +70,7 @@ This is the same workload but this time only one wave issues instructions each c
 ![Figure 3](/assets/interleaving_3.png)  
 ###### Figure 3. Execution history 4:4
 This time four instructions are issued each cycle. Note that ALUs are oversubscribed in this case so two waves idle almost all the time(actually it's a pitfall of the scheduling algorithm).  
+***Update*** Read more about scheduling challenges\[[12]\].  
 
 Real world GPUs have different configurations per core: some may have up to 40 waves per core and 4 ALUs, some have fixed 7 waves and 2 ALUs. It all depends on a variety of factors and is determined through thorough architecture simulation process.
 Also real SIMD ALUs may have narrower width than those of waves they serve, it then takes multiple cycles to process one issued instruction, the multiplier is called 'chime' length\[[3]\].
@@ -84,7 +85,7 @@ if (lane_id & 1) {
 }
 // Do some more
 ```
-Here we see instruction stream where execution path depends on the id of the lane being executed. Apparently different lanes have different values. So what should happen? There are different approaches to tackle this problem \[[4]\] but eventually they do approximately the same thing. One of such approaches is execution mask which I will focus on. This approach is employed by pre-Volta Nvidia GPUs. The core of execution mask is that we keep a bit for each lane within wave. If a lane has 0 set to its corresponding execution bit no registers will be touched for that lane by the next issued instruction. Effectively the lane shouldn't feel the impact of all the executed instruction as long as it's execution bit is 0. The way it works is that a wave traverses control flow graph in depth first order keeping a history of branches taken. I think it's better to follow an example.  
+Here we see instruction stream where execution path depends on the id of the lane being executed. Apparently different lanes have different values. So what should happen? There are different approaches to tackle this problem \[[4]\] but eventually they do approximately the same thing. One of such approaches is execution mask which I will focus on. This approach is employed by pre-Volta Nvidia and AMD GCN GPUs. The core of execution mask is that we keep a bit for each lane within wave. If a lane has 0 set to its corresponding execution bit no registers will be touched for that lane by the next issued instruction. Effectively the lane shouldn't feel the impact of all the executed instruction as long as it's execution bit is 0. The way it works is that a wave traverses control flow graph in depth first order keeping a history of branches taken. I think it's better to follow an example.  
 So lets say we have waves of width 8. This is how execution mask will look like for the kernel:
 ###### Example 1. Execution mask history
 ```c++
@@ -114,6 +115,8 @@ if (lane_id < 16) {
 ```
 You'll notice that history is needed. With execution mask approach usually some kind of stack is employed by the HW. A naive approach is to keep a stack of tuples (exec_mask, address) and add reconvergence instructions that pop a mask from the stack and change the instruction pointer for the wave. In that way a wave will have enough information to traverse the whole CFG for each lane.  
 From performance point of view, it takes a couple of cycles just to process a control flow instruction because of all the bookkeeping. And don't forget that the stack has limited depth.  
+***Update*** By courtesy of [@craigkolb](https://twitter.com/craigkolb) I've read \[[13]\] in which it is noted that AMD GCN selects the path with the fewer number of threads first \[[11]4.6\] which guarantees that log2 depth of the mask stack is enough.  
+### HW support for execution mask
 Now take a look at these control flow graphs(image from Wikipedia):  
 ![Figure 4](/assets/Some_types_of_control_flow_graphs.png)  
 ###### Figure 4. Some types of control flow graphs
@@ -148,7 +151,9 @@ Bottom line:
 * Coherence - lack of divergence :)
 
 ## Execution mask handling examples
-I compiled the previous code snippets into my toy ISA and run it with my simulator which produces cool pictures. Take a look at how it handles execution mask.
+### Fictional ISA
+I compiled the previous code snippets into my toy ISA and run it with my simulator which produces cool pictures. Take a look at how it handles execution mask.  
+***Update*** Note that the toy simulator always selects true path first which is not the best method.
 ###### Example 1
 ```nasm
 ; uint lane_id = get_lane_id();
@@ -227,6 +232,76 @@ CONVERGE:
 ![Figure 7](/assets/branch_3.png)
 ###### Figure 7. Example 3 execution history
 
+### AMD GCN ISA
+***Update*** GCN also uses an explicit mask handling, you can read more about it here\[[11] 4.x\]. I decided it's worth putting some examples with their ISA, thanks to [shader-playground](http://shader-playground.timjones.io) it is easy. Maybe some day I'll come across a simulator and pull out some cool diagrams.  
+Note that the compiler is smart, you may get a different result. I tried to fool the compiler into not optimizing my branches by putting pointer chase loops in there then cleaned up the assembly, I'm not a GCN expert so some necessary nops might've been omitted.  
+Also note that S_CBRANCH_I/G_FORK and S_CBRANCH_JOIN instructions are not used in these snippets because of the simplicity, so the mask stack is not covered.
+###### Example 1
+```nasm
+; uint lane_id = get_lane_id();
+; GCN uses 64 wave width, so lane_id = thread_id & 63
+    v_mov_b32     v1, 0x00000400      ; 1024 - group size
+    v_mad_u32_u24  v0, s12, v1, v0    ; thread_id calculation
+    v_and_b32     v1, 63, v0
+; if (lane_id & 1) {
+    v_and_b32     v2, 1, v0
+    s_mov_b64     s[0:1], exec        ; Save the execution mask
+    v_cmpx_ne_u32  exec, v2, 0
+    s_cbranch_execz  ELSE
+; // Do smth
+ELSE:
+; }
+; // Do some more
+    s_mov_b64     exec, s[0:1]        ; Restore the execution mask
+    s_endpgm
+```
+###### Example 2
+```nasm
+; uint lane_id = get_lane_id();
+    v_mov_b32     v1, 0x00000400
+    v_mad_u32_u24  v0, s8, v1, v0     ; Not sure why s8 this time and not s12
+    v_and_b32     v1, 63, v0
+; LOOP PROLOG
+    s_mov_b64     s[0:1], exec        ; Save the execution mask
+    v_mov_b32     v2, v1
+    v_cmp_le_u32  vcc, 16, v1
+    s_andn2_b64   exec, exec, vcc
+    s_cbranch_execz  LOOP_END
+; for (uint i = lane_id; i < 16; i++) {
+LOOP_BEGIN:
+    ; // Do smth
+    v_add_u32     v2, 1, v2
+    v_cmp_le_u32  vcc, 16, v2
+    s_andn2_b64   exec, exec, vcc     ; Mask out lanes which are beyond loop limit
+    s_cbranch_execnz  LOOP_BEGIN
+LOOP_END:
+    ; // }
+    s_mov_b64     exec, s[0:1]        ; Restore the execution mask
+    s_endpgm
+```
+###### Example 3
+```nasm
+; uint lane_id = get_lane_id();
+    v_mov_b32     v1, 0x00000400
+    v_mad_u32_u24  v0, s12, v1, v0
+    v_and_b32     v1, 63, v0
+    v_and_b32     v2, 1, v0
+    s_mov_b64     s[0:1], exec        ; Save the execution mask
+; if (lane_id < 16) {
+    v_cmpx_lt_u32  exec, v1, 16
+    s_cbranch_execz  ELSE             ; Skip if all bits are zero
+; // Do smth
+; } else {
+ELSE:
+    s_andn2_b64   exec, s[0:1], exec  ; Inverse the mask and & with previous
+    s_cbranch_execz  CONVERGE         ; Skip if all bits are zero
+; // Do smth else
+; }
+CONVERGE:
+    s_mov_b64     exec, s[0:1]        ; Restore the execution mask
+; // Do some more
+    s_endpgm
+``` 
 ## How to fight divergence?
 I tried to come up with a simple yet complete illustration for the inefficiency introduced by combining divergent lanes.  
 Imagine a simple kernel like this:  
@@ -297,5 +372,12 @@ It's worth mentioning that there are some techniques to grapple with divergence 
 
 [11]: https://developer.amd.com/wp-content/resources/Vega_Shader_ISA_28July2017.pdf
 
+[12][Joshua Barczak:Simulating Shader Execution for GCN][12]
+
+[12]: http://www.joshbarczak.com/blog/?p=823#
+
+[13][Tangent Vector: A Digression on Divergence][13]
+
+[13]: https://tangentvector.wordpress.com/2013/04/12/a-digression-on-divergence/
 
 
