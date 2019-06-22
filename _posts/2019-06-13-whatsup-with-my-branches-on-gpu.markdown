@@ -235,19 +235,21 @@ CONVERGE:
 ### AMD GCN ISA
 ***Update*** GCN also uses an explicit mask handling, you can read more about it here\[[11] 4.x\]. I decided it's worth putting some examples with their ISA, thanks to [shader-playground](http://shader-playground.timjones.io) it is easy. Maybe some day I'll come across a simulator and pull out some cool diagrams.  
 Note that the compiler is smart, you may get a different result. I tried to fool the compiler into not optimizing my branches by putting pointer chase loops in there then cleaned up the assembly, I'm not a GCN expert so some necessary nops might've been omitted.  
-Also note that S_CBRANCH_I/G_FORK and S_CBRANCH_JOIN instructions are not used in these snippets because of the simplicity, so the mask stack is not covered.
+Also note that S_CBRANCH_I/G_FORK and S_CBRANCH_JOIN instructions are not used in these snippets due to their simplicity, so unfortunately the mask stack is not covered. If you know how to make the compiler spit stack handling please convey this information.  
 ###### Example 1
 ```nasm
 ; uint lane_id = get_lane_id();
 ; GCN uses 64 wave width, so lane_id = thread_id & 63
+; There are scalar s* and vector v* registers
+; Executon mask does not affect scalar or branch instructions
     v_mov_b32     v1, 0x00000400      ; 1024 - group size
     v_mad_u32_u24  v0, s12, v1, v0    ; thread_id calculation
     v_and_b32     v1, 63, v0
 ; if (lane_id & 1) {
     v_and_b32     v2, 1, v0
     s_mov_b64     s[0:1], exec        ; Save the execution mask
-    v_cmpx_ne_u32  exec, v2, 0
-    s_cbranch_execz  ELSE
+    v_cmpx_ne_u32  exec, v2, 0        ; Set the execution bit
+    s_cbranch_execz  ELSE             ; Jmp if all exec bits are zero
 ; // Do smth
 ELSE:
 ; }
@@ -265,15 +267,15 @@ ELSE:
     s_mov_b64     s[0:1], exec        ; Save the execution mask
     v_mov_b32     v2, v1
     v_cmp_le_u32  vcc, 16, v1
-    s_andn2_b64   exec, exec, vcc
-    s_cbranch_execz  LOOP_END
+    s_andn2_b64   exec, exec, vcc     ; Set the execution bit
+    s_cbranch_execz  LOOP_END         ; Jmp if all exec bits are zero
 ; for (uint i = lane_id; i < 16; i++) {
 LOOP_BEGIN:
     ; // Do smth
     v_add_u32     v2, 1, v2
     v_cmp_le_u32  vcc, 16, v2
     s_andn2_b64   exec, exec, vcc     ; Mask out lanes which are beyond loop limit
-    s_cbranch_execnz  LOOP_BEGIN
+    s_cbranch_execnz  LOOP_BEGIN      ; Jmp if non zero exec mask
 LOOP_END:
     ; // }
     s_mov_b64     exec, s[0:1]        ; Restore the execution mask
@@ -288,19 +290,90 @@ LOOP_END:
     v_and_b32     v2, 1, v0
     s_mov_b64     s[0:1], exec        ; Save the execution mask
 ; if (lane_id < 16) {
-    v_cmpx_lt_u32  exec, v1, 16
-    s_cbranch_execz  ELSE             ; Skip if all bits are zero
+    v_cmpx_lt_u32  exec, v1, 16       ; Set the execution bit
+    s_cbranch_execz  ELSE             ; Jmp if all exec bits are zero
 ; // Do smth
 ; } else {
 ELSE:
     s_andn2_b64   exec, s[0:1], exec  ; Inverse the mask and & with previous
-    s_cbranch_execz  CONVERGE         ; Skip if all bits are zero
+    s_cbranch_execz  CONVERGE         ; Jmp if all exec bits are zero
 ; // Do smth else
 ; }
 CONVERGE:
     s_mov_b64     exec, s[0:1]        ; Restore the execution mask
 ; // Do some more
     s_endpgm
+``` 
+### AVX512
+***Update*** [@tom_forsyth](https://twitter.com/tom_forsyth) pointed out that AVX512 extension comes with an explicit mask handling too, so here are some examples. You can read more about it at \[[14]\] par. 15.x and 15.6.1. It's not precisely a GPU but still a legit SIMD16 at 32 bit. Snippets are made using [godbolt's](https://godbolt.org/) ISPC(--target=avx512knl-i32x16) and tampered with heavily, so could be not 100% correct.
+###### Example 1
+```nasm
+    ; Imagine zmm0 contains 16 lane_ids
+    ; AVXZ512 comes with k0-k7 mask registers
+    ; Usage:
+    ; op reg1 {k[7:0]}, reg2, reg3
+    ; k0 can not be used as a predicate operand, only k1-k7
+; if (lane_id & 1) {
+    vpslld       zmm0 {k1}, zmm0, 31  ; zmm0[i] = zmm0[i] << 31
+    kmovw        eax, k1              ; Save the execution mask
+    vptestmd     k1 {k1}, zmm0, zmm0  ; k1[i] = zmm0[i] != 0
+    kortestw     k1, k1
+    je           ELSE                 ; Jmp if all exec bits are zero
+; // Do smth
+    ; Now k1 contains the execution mask
+    ; We can use it like this:
+    ; vmovdqa32 zmm1 {k1}, zmm0
+ELSE:
+; }
+    kmovw        k1, eax              ; Restore the execution mask
+; // Do some more
+    ret
+```
+###### Example 2
+```nasm
+ ; Imagine zmm0 contains 16 lane_ids
+    kmovw         eax, k1               ; Save the execution mask
+    vpcmpltud     k1 {k1}, zmm0, 16     ; k1[i] = zmm0[i] < 16
+    kortestw      k1, k1
+    je            LOOP_END              ; Jmp if all exec bits are zero
+    vpternlogd    zmm1 {k1}, zmm1, zmm1, 255   ; zmm1[i] = -1
+; for (uint i = lane_id; i < 16; i++) {
+LOOP_BEGIN:
+; // Do smth
+    vpsubd        zmm0 {k1}, zmm0, zmm1 ; zmm0[i] = zmm0[i] + 1
+    vpcmpltud     k1 {k1}, zmm0, 16     ; masked k1[i] = zmm0[i] < 16
+    kortestw      k1, k1
+    jne           LOOP_BEGIN            ; Break if all exec bits are zero
+LOOP_END:
+; // }
+    kmovw        k1, eax                ; Restore the execution mask
+; // Do some more
+    ret
+```
+###### Example 3
+```nasm
+ ; Imagine zmm0 contains 16 lane_ids
+; if (lane_id & 1) {
+    vpslld       zmm0 {k1}, zmm0, 31  ; zmm0[i] = zmm0[i] << 31
+    kmovw        eax, k1              ; Save the execution mask
+    vptestmd     k1 {k1}, zmm0, zmm0  ; k1[i] = zmm0[i] != 0
+    kortestw     k1, k1
+    je           ELSE                 ; Jmp if all exec bits are zero
+THEN:
+; // Do smth
+; } else {
+ELSE:
+    kmovw        ebx, k1
+    andn         ebx, eax, ebx
+    kmovw        k1, ebx              ; mask = ~mask & old_mask
+    kortestw     k1, k1
+    je           CONVERGE             ; Jmp if all exec bits are zero
+; // Do smth else
+; }
+CONVERGE:
+kmovw            k1, eax              ; Restore the execution mask
+; // Do some more
+    ret
 ``` 
 ## How to fight divergence?
 I tried to come up with a simple yet complete illustration for the inefficiency introduced by combining divergent lanes.  
@@ -328,6 +401,7 @@ For example, if you are writing a ray tracer, grouping rays with similar directi
 It's worth mentioning that there are some techniques to grapple with divergence on HW level, some of them are Dynamic Warp Formation\[[7]\] and predicated execution for small branches.
 
 # Links
+
 [1][A trip through the Graphics Pipeline][1]
 
 [1]: https://fgiesen.wordpress.com/2011/07/09/a-trip-through-the-graphics-pipeline-2011-index/
@@ -380,4 +454,12 @@ It's worth mentioning that there are some techniques to grapple with divergence 
 
 [13]: https://tangentvector.wordpress.com/2013/04/12/a-digression-on-divergence/
 
+[14][Intel® 64 and IA-32 ArchitecturesSoftware Developer’s Manual][14]
 
+[14]: https://software.intel.com/sites/default/files/managed/39/c5/325462-sdm-vol-1-2abcd-3abcd.pdf
+
+
+# Comments
+I don't have comments so here's a link to the wrapper tweet
+<blockquote class="twitter-tweet" data-lang="en"><p lang="en" dir="ltr">Wrote a post with basic info about control flow handling on GPU with focus on execution mask approach. Please reach out if you find any mistakes or have suggestions.<a href="https://t.co/ctUFDTkoal">https://t.co/ctUFDTkoal</a></p>&mdash; Anton Schreiner (@kokoronomagnet) <a href="https://twitter.com/kokoronomagnet/status/1141562844871385093?ref_src=twsrc%5Etfw">June 20, 2019</a></blockquote>
+<script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
