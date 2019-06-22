@@ -236,6 +236,7 @@ CONVERGE:
 ***Update*** GCN also uses an explicit mask handling, you can read more about it here\[[11] 4.x\]. I decided it's worth putting some examples with their ISA, thanks to [shader-playground](http://shader-playground.timjones.io) it is easy. Maybe some day I'll come across a simulator and pull out some cool diagrams.  
 Note that the compiler is smart, you may get a different result. I tried to fool the compiler into not optimizing my branches by putting pointer chase loops in there then cleaned up the assembly, I'm not a GCN expert so some necessary nops might've been omitted.  
 Also note that S_CBRANCH_I/G_FORK and S_CBRANCH_JOIN instructions are not used in these snippets due to their simplicity, so unfortunately the mask stack is not covered. If you know how to make the compiler spit stack handling please convey this information.  
+***Update*** Watch this [talk](https://youtu.be/8K8ClHoZzHw) by [@SiNGUL4RiTY](https://twitter.com/SiNGUL4RiTY) about the implementation of GCN control flow in LLVM.  
 ###### Example 1
 ```nasm
 ; uint lane_id = get_lane_id();
