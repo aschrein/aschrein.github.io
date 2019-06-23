@@ -85,7 +85,7 @@ if (lane_id & 1) {
 }
 // Do some more
 ```
-Here we see instruction stream where execution path depends on the id of the lane being executed. Apparently different lanes have different values. So what should happen? There are different approaches to tackle this problem \[[4]\] but eventually they do approximately the same thing. One of such approaches is execution mask which I will focus on. This approach is employed by pre-Volta Nvidia and AMD GCN GPUs. The core of execution mask is that we keep a bit for each lane within wave. If a lane has 0 set to its corresponding execution bit no registers will be touched for that lane by the next issued instruction. Effectively the lane shouldn't feel the impact of all the executed instruction as long as it's execution bit is 0. The way it works is that a wave traverses control flow graph in depth first order keeping a history of branches taken. I think it's better to follow an example.  
+Here we see instruction stream where execution path depends on the id of the lane being executed. Apparently different lanes have different values. So what should happen? There are different approaches to tackle this problem \[[4]\] but eventually they do approximately the same thing. One of such approaches is execution mask which I will focus on. This approach is employed by pre-Volta Nvidia and AMD GCN GPUs. The core of execution mask is that we keep a bit for each lane within wave. If a lane has 0 set to its corresponding execution bit no registers will be touched for that lane by the next issued instruction. Effectively the lane shouldn't feel the impact of all the executed instruction as long as it's execution bit is 0. The way it works is that a wave traverses control flow graph in depth first order keeping a history of branches taken until no bits are set. I think it's better to follow an example.  
 So lets say we have waves of width 8. This is how execution mask will look like for the kernel:
 ###### Example 1. Execution mask history
 ```c++
@@ -114,8 +114,10 @@ if (lane_id < 16) {
 }
 ```
 You'll notice that history is needed. With execution mask approach usually some kind of stack is employed by the HW. A naive approach is to keep a stack of tuples (exec_mask, address) and add reconvergence instructions that pop a mask from the stack and change the instruction pointer for the wave. In that way a wave will have enough information to traverse the whole CFG for each lane.  
-From performance point of view, it takes a couple of cycles just to process a control flow instruction because of all the bookkeeping. And don't forget that the stack has limited depth.  
-***Update*** By courtesy of [@craigkolb](https://twitter.com/craigkolb) I've read \[[13]\] in which it is noted that AMD GCN selects the path with the fewer number of threads first \[[11]4.6\] which guarantees that log2 depth of the mask stack is enough.  
+From the performance point of view, it takes a couple of cycles just to process a control flow instruction because of all the bookkeeping. And don't forget that the stack has limited depth.  
+***Update*** By courtesy of [@craigkolb](https://twitter.com/craigkolb) I've read \[[13]\] in which it is noted that AMD GCN fork/join instructions select the path with the fewer number of threads first \[[11]4.6\] which guarantees that log2 depth of the mask stack is enough.  
+***Update*** Apparently it's almost always possible to inline everything/structurize CFGs in a shader and therefore keep all execution mask history in registers and schedule CFG traversal/reconvergence statically\[[15]\]. Skimming through LLVM backend for AMDGPU I didn't find any evidence of stack handling ever being emitted by the compiler.  
+  
 ### HW support for execution mask
 Now take a look at these control flow graphs(image from Wikipedia):  
 ![Figure 4](/assets/Some_types_of_control_flow_graphs.png)  
@@ -144,7 +146,8 @@ C:
 D:
     ret
 ```
-I'm not an expert in control flow analysis or ISA design so I'm sure there is a case that could not be tamed with my toy ISA, although it does not matter as structured CFG should be enough for everyone.
+I'm not an expert in control flow analysis or ISA design so I'm sure there is a case that could not be tamed with my toy ISA, although it does not matter as structured CFG should be enough for everyone.  
+***Update*** Read more on GCN support for control flow instructions \[[11]\] ch.4 and LLVM implementation \[[15]\].
 
 Bottom line:  
 * Divergence - emerging difference in execution paths taken by different lanes of the same wave
@@ -235,8 +238,8 @@ CONVERGE:
 ### AMD GCN ISA
 ***Update*** GCN also uses an explicit mask handling, you can read more about it here\[[11] 4.x\]. I decided it's worth putting some examples with their ISA, thanks to [shader-playground](http://shader-playground.timjones.io) it is easy. Maybe some day I'll come across a simulator and pull out some cool diagrams.  
 Note that the compiler is smart, you may get a different result. I tried to fool the compiler into not optimizing my branches by putting pointer chase loops in there then cleaned up the assembly, I'm not a GCN expert so some necessary nops might've been omitted.  
-Also note that S_CBRANCH_I/G_FORK and S_CBRANCH_JOIN instructions are not used in these snippets due to their simplicity, so unfortunately the mask stack is not covered. If you know how to make the compiler spit stack handling please convey this information.  
-***Update*** Watch this [talk](https://youtu.be/8K8ClHoZzHw) by [@SiNGUL4RiTY](https://twitter.com/SiNGUL4RiTY) about the implementation of GCN control flow in LLVM.  
+Also note that S_CBRANCH_I/G_FORK and S_CBRANCH_JOIN instructions are not used in these snippets due to their simplicity/lack of compiler support. Therefore unfortunately the mask stack is not covered. If you know how to make the compiler spit stack handling please convey this information.  
+***Update*** Watch this [talk](https://youtu.be/8K8ClHoZzHw) by [@SiNGUL4RiTY](https://twitter.com/SiNGUL4RiTY) about the implementation of vectorized control flow in LLVM backend employed by AMD.  
 ###### Example 1
 ```nasm
 ; uint lane_id = get_lane_id();
@@ -458,6 +461,12 @@ It's worth mentioning that there are some techniques to grapple with divergence 
 [14][Intel® 64 and IA-32 ArchitecturesSoftware Developer’s Manual][14]
 
 [14]: https://software.intel.com/sites/default/files/managed/39/c5/325462-sdm-vol-1-2abcd-3abcd.pdf
+
+[15][Vectorizing Divergent Control-Flow for SIMD Applications][15]
+
+[15]: https://github.com/rAzoR8/EuroLLVM19
+
+
 
 
 # Comments
