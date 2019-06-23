@@ -155,8 +155,8 @@ Bottom line:
 
 ## Execution mask handling examples
 ### Fictional ISA
-I compiled the previous code snippets into my toy ISA and run it with my simulator which produces cool pictures. Take a look at how it handles execution mask.  
-***Update*** Note that the toy simulator always selects true path first which is not the best method.
+I compiled the previous code snippets into my toy ISA and run it on simulator at SIMD32. Take a look at how it handles execution mask.  
+***Update*** Note that the toy simulator always selects the true path first which is not the best method.
 ###### Example 1
 ```nasm
 ; uint lane_id = get_lane_id();
@@ -167,12 +167,6 @@ I compiled the previous code snippets into my toy ISA and run it with my simulat
     mask_nz r0.y
 LOOP_BEGIN:
     ; // Do smth
-     mov r0.x, r0.x
-     mov r0.x, r0.x
-     mov r0.x, r0.x
-     mov r0.x, r0.x
-     mov r0.x, r0.x
-     
     pop_mask                ; pop mask and reconverge
 BRANCH_END:
     ; // Do some more
@@ -210,23 +204,10 @@ LOOP_END:
     br_push r0.y, ELSE, CONVERGE
 THEN:
     ; // Do smth
-    mov r0.x, r0.x
-    mov r0.x, r0.x
-    mov r0.x, r0.x
-    mov r0.x, r0.x
-    mov r0.x, r0.x
-
     pop_mask
-
     ; } else {
 ELSE:
     ; // Do smth else
-    mov r0.x, r0.x
-    mov r0.x, r0.x
-    mov r0.x, r0.x
-    mov r0.x, r0.x
-    mov r0.x, r0.x
-
     pop_mask
     ; }
 CONVERGE:
