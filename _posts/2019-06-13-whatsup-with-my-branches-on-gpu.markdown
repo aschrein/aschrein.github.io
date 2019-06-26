@@ -25,6 +25,7 @@ This post is a small writeup addressed to programmers who are interested to lear
 * BB - Basic Block - linear sequence of instructions with only one jump at the end
 * ILP - Instruction Level Parallelism\[[3]\]
 * ISA - Instruction Set Architecture
+* SLM - Shared Local Memory, Group Local
 
 Throughout this post I'm referring to this fictional taxonomy. It approximates how a modern GPU is organized.
 ```
@@ -385,6 +386,44 @@ For example, if you are writing a ray tracer, grouping rays with similar directi
 
 It's worth mentioning that there are some techniques to grapple with divergence on HW level, some of them are Dynamic Warp Formation\[[7]\] and predicated execution for small branches.
 
+## Divergent memory access
+***Update Jun 26, 2019*** Added a few thoughts on memory access in a divergent control flow. It feels like there's more of the speculation going on than usual. So if you spot any errors please reach out.  
+On SIMD architecture every load is gather and every store is scatter. A memory operation is generated for each active lane when a store/load instruction is issued, typically if inactive lanes have invalid addresses at the corresponding address slots, no exception is going to be generated.  
+Memory coalescing machinery is going to take care of optimizing apparent patterns to the global memory which is one of the benefits of gather loads. In case you access SLM you may hit a bank colision issue among lanes.  
+Now, what about this 100 pound elephant in the room? Things indeed might get hairy if you are trying to sample a texture in a branch. Particularly, if you are sampling in a pixel shader and use anisotropic/trilinear filtering - those kind of features depend on HW gradients which require that all lanes participating in a 2x2 pixel group have valid arguments. A good read on the subject matter is [DirectX-Specs 16.8.2 Restrictions on Derivative Calculations](https://microsoft.github.io/DirectX-Specs/d3d/archive/D3D11_3_FunctionalSpec.htm#16.8%20Interaction%20of%20Varying%20Flow%20Control%20With%20Screen%20Derivatives). In short the spec allows such samples if the texture address is a shader input or a statically indexed constant. It makes sense because even if the HW does not know how to handle divergent samples, its compiler can just hoist that sample from the branch and eliminate the issue completely. I expect other APIs to enforce similar behaviour.  
+Worth mentioning that the amount of in-flight memory requests being served is somehow limited by the HW. So if you have a kernel with tons of samples or memory loads, it might stall just trying to issue those requests. Which means that some amount of interleaving of ALU instructions and memory requests is needed to avoid such stalls. But fear not, it's usually taken care of in the compiler, fortunately shader memory models are quite permissive when it comes to reordering.  
+### When to branch?
+I had one use case in mind. Purely theoretical yet may be interesting.  
+Sometimes you might be hitting the limit of on-flight requests on your HW. In this case it makes sense to reduce the amount of issued samples.
+Imagine this example:
+```c++
+a = mask.sample(sampler, uv);
+b = diffuse_1.sample(sampler, uv);
+c = diffuse_2.sample(sampler, uv);
+d = diffuse_3.sample(sampler, uv);
+e = diffuse_4.sample(sampler, uv);
+pixel = b * a.x + c * a.y + d * a.z + e * a.w;
+```
+Basically we sample a mask and then blend 4 textures. It could be a terrain rendering and we mix grass and ground textures.  
+If our HW is going to stall on issue limit we are going to pay at least 2 sample latencies.  
+Now take a look at this transformed example:
+```c++
+a = mask.sample(sampler, uv);
+b = diffuse_1.sample(sampler, uv);
+c = diffuse_2.sample(sampler, uv);
+d = diffuse_3.sample(sampler, uv);
+if (a.w > 0.0) {
+    e = diffuse_4.sample(sampler, uv);
+} else {
+    e = float4(0.0, 0.0, 0.0, 0.0);
+}
+pixel = b * a.x + c * a.y + d * a.z + e * a.w;
+```
+If we already stall on sampler oversubscription, introducing a data dependency between a and e does not make things worse. And in a case when a.w is zero we are not paying for that redundant sample. The texture address to the sampler should be the shader input though.  
+This is highly HW/compiler dependent. The compiler may eliminate this branch completely, however, AMD compiler [keeps](http://shader-playground.timjones.io/4962d619e78e436b7ce015895a2991ef) it.  
+Note that this example is artificially bad, you shouldn't have tons of samples and use something like virtual texture cache like described in \[[16]\].
+
+
 # Links
 
 [1][A trip through the Graphics Pipeline][1]
@@ -447,7 +486,9 @@ It's worth mentioning that there are some techniques to grapple with divergence 
 
 [15]: https://github.com/rAzoR8/EuroLLVM19
 
+[16][Jason Booth: Terrain Shader Generation Systems][16]
 
+[16]: https://80.lv/articles/using-next-gen-terrain-engines-for-games-production-009snw/?fbclid=IwAR3L7HgMjz8aCCIy_XQc-Tedn7JOHrYzIR10QvZRTEbOCcLFWu6izc7bS4M
 
 
 # Comments
