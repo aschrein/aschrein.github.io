@@ -6,7 +6,7 @@ categories: jekyll update
 ---
 
 ## About
-This post is a small writeup addressed to programmers who are interested to learn more about how GPU handles branching and targeted as an introduction to the topic. I recommend skimming through \[[1]\], \[[2]\] and \[[8]\] to get an idea of what GPU execution model looks like in general because here we're gonna take a closer look at one particular detail. A curious reader shall find all references at the end of the post. If you find any mistakes please reach out.
+This post is a small writeup addressed to programmers who are interested to learn more about how GPU handles branching and targeted as an introduction to the topic. I recommend skimming through \[[1]\], \[[2]\], \[[17]\] and \[[8]\] to get an idea of what GPU execution model looks like in general because here we're gonna take a closer look at one particular detail. A curious reader shall find all references at the end of the post. If you find any mistakes please reach out.
 
 ## Table of content
 * this unordered seed list will be replaced
@@ -219,7 +219,7 @@ CONVERGE:
 
 ### AMD GCN ISA
 ***Update*** GCN also uses an explicit mask handling, you can read more about it here\[[11] 4.x\]. I decided it's worth putting some examples with their ISA, thanks to [shader-playground](http://shader-playground.timjones.io) it is easy. Maybe some day I'll come across a simulator and pull out some cool diagrams.  
-Note that the compiler is smart, you may get a different result. I tried to fool the compiler into not optimizing my branches by putting pointer chase loops in there then cleaned up the assembly, I'm not a GCN expert so some necessary nops might've been omitted.  
+Note that the compiler is smart, you may get a different result. I tried to fool the compiler into not optimizing my branches by putting pointer chase loops in there then cleaned up the assembly.  
 Also note that S_CBRANCH_I/G_FORK and S_CBRANCH_JOIN instructions are not used in these snippets due to their simplicity/lack of compiler support. Therefore unfortunately the mask stack is not covered. If you know how to make the compiler spit stack handling please convey this information.  
 ***Update*** Watch this [talk](https://youtu.be/8K8ClHoZzHw) by [@SiNGUL4RiTY](https://twitter.com/SiNGUL4RiTY) about the implementation of vectorized control flow in LLVM backend employed by AMD.  
 ###### Example 1
@@ -291,7 +291,7 @@ CONVERGE:
     s_endpgm
 ``` 
 ### AVX512
-***Update*** [@tom_forsyth](https://twitter.com/tom_forsyth) pointed out that AVX512 extension comes with an explicit mask handling too, so here are some examples. You can read more about it at \[[14]\] par. 15.x and 15.6.1. It's not precisely a GPU but still a legit SIMD16 at 32 bit. Snippets are made using [godbolt's](https://godbolt.org/) ISPC(--target=avx512knl-i32x16) and tampered with heavily, so could be not 100% correct.
+***Update*** [@tom_forsyth](https://twitter.com/tom_forsyth) pointed out that AVX512 extension comes with an explicit mask handling too, so here are some examples. You can read more about it at \[[14]\] par. 15.x and 15.6.1. It's not precisely a GPU but still a legit SIMD16 at 32 bit. Snippets are made using [godbolt's](https://godbolt.org/) ISPC(--target=avx512knl-i32x16) and tampered with heavily.
 ###### Example 1
 ```nasm
     ; Imagine zmm0 contains 16 lane_ids
@@ -389,7 +389,7 @@ It's worth mentioning that there are some techniques to grapple with divergence 
 ## Divergent memory access
 ***Update Jun 26, 2019*** Added a few thoughts on memory access in a divergent control flow. It feels like there's more of the speculation going on than usual. So if you spot any errors please reach out.  
 On SIMD architecture every load is gather and every store is scatter. A memory operation is generated for each active lane when a store/load instruction is issued, typically if inactive lanes have invalid addresses at the corresponding address slots, no exception is going to be generated.  
-Memory coalescing machinery is going to take care of optimizing apparent patterns to the global memory which is one of the benefits of gather loads. In case you access SLM you may hit a bank colision issue.  
+Memory coalescing machinery is going to take care of optimizing apparent patterns to the global memory which is one of the benefits of gather loads. In case you access SLM you may hit a bank collision issue.  
 Now, what about this 10000 pound elephant in the room? Things indeed might get hairy if you are trying to sample a texture in a branch. Particularly, if you are sampling in a pixel shader and use anisotropic/trilinear filtering - those kind of features depend on HW gradients which require that all lanes participating in a 2x2 pixel group have valid arguments. A good read on the subject matter is [DirectX-Specs 16.8.2 Restrictions on Derivative Calculations](https://microsoft.github.io/DirectX-Specs/d3d/archive/D3D11_3_FunctionalSpec.htm#16.8%20Interaction%20of%20Varying%20Flow%20Control%20With%20Screen%20Derivatives). In short the spec allows such samples if the texture address is a shader input or a statically indexed constant. It makes sense because even if the HW does not know how to handle divergent samples, its compiler can just hoist that sample from the branch and eliminate the issue completely. I expect other APIs to enforce similar behaviour.  
 Worth mentioning that the amount of in-flight memory requests being served is somehow limited by the HW. So if you have a kernel with tons of samples or memory loads, it might stall just trying to issue those requests. Which means that some amount of interleaving of ALU instructions and memory requests is needed to avoid such stalls. But fear not, it's usually taken care of in the compiler, fortunately shader memory models are quite permissive when it comes to reordering.  
 ### When to branch?
@@ -397,31 +397,30 @@ I had one use case in mind. Purely theoretical yet may be interesting.
 Sometimes you might be hitting the limit of on-flight requests on your HW. In this case it makes sense to reduce the amount of issued samples.
 Imagine this example:
 ```c++
-a = mask.sample(sampler, uv);
+a = mask.Sample(sampler, uv);
 b = diffuse_1.Sample(sampler, uv);
 c = diffuse_2.Sample(sampler, uv);
-d = diffuse_3.Sample(sampler, uv);
-e = diffuse_4.Sample(sampler, uv);
-pixel = b * a.x + c * a.y + d * a.z + e * a.w;
+pixel = b * a.x + c * (1.0 - a.x);
 ```
-Basically we sample a mask and then blend 4 textures. It could be a terrain rendering and we mix grass and ground textures.  
-If our HW is going to stall on issue limit we are going to pay at least 2 sample latencies.  
+Basically we sample a mask and then blend 4 textures. It could be a terrain rendering and we mix grass and ground textures. The mask could look like that:  
+![Figure 10](/assets/noise.png)  
+###### Figure 10. Example of a texture mask containing interleaved spots of constant value
+Notice that the mask consists of big isles of constant values with a little bit of blend on boundaries.  
+If our HW is going to stall on issue limit we are going to pay more than 1 sample latency.  
 Now take a look at this transformed example:
 ```c++
-a = mask.sample(sampler, uv);
+a = mask.Sample(sampler, uv);
 b = diffuse_1.Sample(sampler, uv);
-c = diffuse_2.Sample(sampler, uv);
-d = diffuse_3.Sample(sampler, uv);
-if (a.w > 0.0) {
-    e = diffuse_4.Sample(sampler, uv);
+if (a.x < 1.0) {
+    c = diffuse_2.Sample(sampler, uv);
 } else {
-    e = float4(0.0, 0.0, 0.0, 0.0);
+    c = float4(0.0, 0.0, 0.0, 0.0);
 }
-pixel = b * a.x + c * a.y + d * a.z + e * a.w;
+pixel = b * a.x + c * (1.0 - a.x);
 ```
-If the wave already stalls on sampler oversubscription, introducing a data dependency between a and e does not make things worse(the wave has to wait for a to arrive before issuing e). And in the case when a.w is zero we are not paying for that redundant sample. The texture address to the sampler should be the shader input though.  
-This is highly HW/compiler dependent. The compiler may eliminate this branch completely, however, AMD compiler [keeps](http://shader-playground.timjones.io/4962d619e78e436b7ce015895a2991ef) it.  
-Note that this example is artificially bad, you shouldn't have tons of samples and use something like virtual texture cache like described in \[[16]\].
+If the wave already stalls on sampler oversubscription, introducing a data dependency between a and e may not make things worse(the wave has to wait for a to arrive before issuing c). When a.x is 1.0 we are not paying for that redundant sample. In the case of the mask depicted in Figure 10. waves skip the second sample most of the time.  
+This is highly HW/compiler dependent. The compiler may eliminate this branch completely, however, AMD compiler [keeps](http://shader-playground.timjones.io/79af193deadab308250d5bbbb7e2ca75) it.  
+Note that this example is artificially bad, you shouldn't have that much of samples to stall on issue limit and if you do probably something like virtual texture cache could be employed \[[16]\].
 
 
 # Links
@@ -489,6 +488,11 @@ Note that this example is artificially bad, you shouldn't have tons of samples a
 [16][Jason Booth: Terrain Shader Generation Systems][16]
 
 [16]: https://80.lv/articles/using-next-gen-terrain-engines-for-games-production-009snw/?fbclid=IwAR3L7HgMjz8aCCIy_XQc-Tedn7JOHrYzIR10QvZRTEbOCcLFWu6izc7bS4M
+
+[17][Matthäus G. Chajdas: Introduction to compute shaders][17]
+
+[17]: https://anteru.net/blog/2018/intro-to-compute-shaders/
+
 
 
 # Comments
