@@ -156,9 +156,9 @@ I'm not an expert in control flow analysis or ISA design so I'm sure there is a 
 Bottom line:  
 * Divergence - emerging difference in execution paths taken by different lanes of the same wave
 * Coherence - lack of divergence
-* HW needs extra instructions/registers to handle execution mask.  
+* HW needs extra instructions/registers/stack to handle execution mask
   * More branches - more register pressure
-* If one lane enters the branch all lanes enter the branch.
+* If one lane enters the branch all lanes enter the branch
   * It could get as worse as 1/N efficiency
 
 ## Execution mask handling examples
@@ -378,6 +378,7 @@ for (uint i = 0; i < iter_count; i++) {
     // Do smth
 }
 ```
+It may resemble a raymarcher, where it takes more iterations for missed rays near surface and less iterations for straight hit/miss rays.  
 Let's spawn 256 threads and measure the duration:  
 ![Figure 8](/assets/rand.png)  
 ###### Figure 8. Divergent threads execution time
@@ -388,8 +389,14 @@ The execution time of a wave is equal to the maximum execution time among confin
 This figure shows the same bars but this time iteration counts are sorted over thread ids, so that threads with similar iteration counts get dispatched to the same wave.  
 For this example the potential speedup is around 2x.  
 
-Of course the example is too simple but I hope you get the idea: execution divergence stems from data divergence, so keep your CFG simple and data coherent.  
+Bottom line:
+* Sort input data
+
 For example, if you are writing a ray tracer, grouping rays with similar direction and position could be beneficial because they are likely to be traversing the same nodes in BVH. For more details please follow \[[10]\] and related articles.
+
+* Keep CFG simple
+
+If your cfg is complex it typically makes sense to split the kernel and classify your data. For example, on a deferred shading pass you could detect tiles on the offscreen buffer that contain some expensive material and spawn pixel shaders separately for those tiles instead of doing full screen uber shader.
 
 It's worth mentioning that there are some techniques to grapple with divergence on HW level, some of them are Dynamic Warp Formation\[[7]\] and predicated execution for small branches.
 
