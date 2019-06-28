@@ -58,13 +58,15 @@ Other names:
 * lane could be SW thread
 
 ## What is so special about GPU core compared to CPU core?
-Any current generation single GPU core is less beefy compared to what you may encounter in CPU world: simple ILP/multi-issue\[[6]\] and prefetch\[[5]\], no speculation or branch/return prediction. All of this coupled with tiny caches frees up quite a lot of the die area which gets filled with more cores. Memory load/store machinery is able to handle bandwidths of an order of magnitude larger(not true for integrated/mobile GPUs) than that of a typical CPU at a cost of more latency. GPU employs SMT\[[2]\] to hide this latency - while one wave is stalled, another utilizes free computation resources of a core. Typically the number of waves handled by one core depends on registers used and determined dynamically by allocating on a fixed register file\[[8]\]. The instruction scheduling is hybrid dynamic and static\[[6]\] \[[11] 4.4\]. SMT cores execute in SIMD mode yielding high number of FLOPS.
+Any current generation single GPU core is less beefy compared to what you may encounter in CPU world: simple ILP/multi-issue\[[6]\] and prefetch\[[5]\], no speculation or branch/return prediction. All of this coupled with tiny caches frees up quite a lot of the die area which gets filled with more cores. Memory load/store machinery is able to handle bandwidths of an order of magnitude larger(not true for integrated/mobile GPUs) than that of a typical CPU at a cost of more latency. GPU employs SMT\[[2]\] to hide this latency - while one wave is stalled, another utilizes free computation resources of a core. Typically the number of waves handled by one core depends on registers used and determined dynamically by allocating on a fixed register file\[[8]\]. The instruction scheduling is hybrid dynamic and static\[[6]\] \[[11] 4.4\]. SMT cores execute in SIMD mode yielding high number of FLOPS.  
+From software point of view the programmer usually writes his kernel in some high level language which does not expose all the HW details like SIMD width or instruction scheduling. However, typically kernels get compiled into SIMD instructions where each lane corresponds to one software thread. Therefore the actual hardware thread(wave) executes N software threads in lockstep. Also different ISAs expose their SIMD nature differently, some use explicit SIMD instructions(Intel SSE/AVX and Intel Gen) some use implicit(AMD GCN, Nvidia PTX).  
+### Illustrations of GPU core
 ![Figure 1](/assets/legend.png)  
-###### Diagram legend
+###### Diagram color-state coding
 ![Figure 1](/assets/interleaving.png)  
 ###### Figure 1. Execution history 4:2
 Made on my toy [gpu simulator](https://aschrein.github.io/guppy/)(not user friendly).  
-The image shows history of execution mask where the x axis is time from left to right and the y axis is lane id from top to bottom. If it does not make sense to you, please return to it after reading the next sections.  
+The image shows history of execution mask where the x axis is time from left to right 1 clock per pixel and the y axis is 1 lane state per pixel and waves in SIMD32 mode from top to bottom. If it does not make sense to you, please return to it after reading the next sections.  
 This is an illustration of how a GPU core execution history might look like for a fictional configuration: four waves share one sampler and two ALU units. Wave scheduler dispatches two instructions from two waves each cycle. When a wave stalls on memory access or long ALU operation, scheduler switches to another pair of waves making ALU units almost 100% busy all the time.  
 ![Figure 2](/assets/interleaving_2.png)  
 ###### Figure 2. Execution history 4:1
@@ -153,7 +155,11 @@ I'm not an expert in control flow analysis or ISA design so I'm sure there is a 
 
 Bottom line:  
 * Divergence - emerging difference in execution paths taken by different lanes of the same wave
-* Coherence - lack of divergence :)
+* Coherence - lack of divergence
+* HW needs extra instructions/registers to handle execution mask.  
+  * More branches - more register pressure
+* If one lane enters the branch all lanes enter the branch.
+  * It could get as worse as 1/N efficiency
 
 ## Execution mask handling examples
 ### Fictional ISA
