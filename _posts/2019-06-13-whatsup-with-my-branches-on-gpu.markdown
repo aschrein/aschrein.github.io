@@ -291,7 +291,7 @@ CONVERGE:
     s_endpgm
 ``` 
 ### AVX512
-***Update*** [@tom_forsyth](https://twitter.com/tom_forsyth) pointed out that AVX512 extension comes with an explicit mask handling too, so here are some examples. You can read more about it at \[[14]\] par. 15.x and 15.6.1. It's not precisely a GPU but still a legit SIMD16 at 32 bit. Snippets are made using [godbolt's](https://godbolt.org/) ISPC(--target=avx512knl-i32x16) and tampered with heavily.
+***Update*** [@tom_forsyth](https://twitter.com/tom_forsyth) pointed out that AVX512 extension comes with an explicit mask handling too, so here are some examples. You can read more about it at \[[14]\] par. 15.x and 15.6.1. It's not precisely a GPU but still a legit SIMD16 at 32 bit. Snippets are made using [godbolt's](https://godbolt.org/z/kwrr1y) ISPC(--target=avx512knl-i32x16) and tampered with heavily.
 ###### Example 1
 ```nasm
     ; Imagine zmm0 contains 16 lane_ids
