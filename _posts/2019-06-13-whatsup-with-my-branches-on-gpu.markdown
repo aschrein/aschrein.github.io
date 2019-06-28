@@ -63,6 +63,7 @@ Any current generation single GPU core is less beefy compared to what you may en
 ###### Diagram legend
 ![Figure 1](/assets/interleaving.png)  
 ###### Figure 1. Execution history 4:2
+Made on my toy [gpu simulator](https://aschrein.github.io/guppy/)(not user friendly).  
 The image shows history of execution mask where the x axis is time from left to right and the y axis is lane id from top to bottom. If it does not make sense to you, please return to it after reading the next sections.  
 This is an illustration of how a GPU core execution history might look like for a fictional configuration: four waves share one sampler and two ALU units. Wave scheduler dispatches two instructions from two waves each cycle. When a wave stalls on memory access or long ALU operation, scheduler switches to another pair of waves making ALU units almost 100% busy all the time.  
 ![Figure 2](/assets/interleaving_2.png)  
