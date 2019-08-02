@@ -134,11 +134,12 @@ Specular component.
 
 {% include slider.html selector="girl_0_integrated_light" %}  
 
+Specular/Diffuse components for radiosity/local lights are integrated with albedo. Check out the slider to get the gist of how each component contributes to the image.
 
 ### Apply transparent glass
 ![](/assets/re2/girl_0/light/glass.gif)
 
-After all lightning has been applied, transparent glass is rendered.
+After all light has been applied, transparent glass is rendered.
 
 ### Compute volumetrics/haze/smoke
 
@@ -180,7 +181,7 @@ This pass computes the downscaled image first
 
 ![GIS](/assets/re2/girl_0/light/postprocess.gif)
 
-And then applies bloom filter, tonemapping, distortion and chromatic abberration.
+And then applies bloom filter, tonemapping, distortion and chromatic aberration.
 
 ## Conclusion
 
