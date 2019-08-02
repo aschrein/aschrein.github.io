@@ -1,0 +1,21 @@
+---
+layout: post
+title:  "Cheatsheets"
+---
+## Image Magic
+```console
+## Scale exactly
+$ convert -scale 512x512! -filter box $0.png $0_scaled.png
+## Find all *.png images in the current folder and scale them
+$ find . -name "*.png" -execdir sh -c 'printf "%s\n" "${0%.*}"' {} ';' | xargs -l bash -c 'convert -scale 512x512 -filter box $0.png $0_scaled.png'
+## Create a gif
+$ convert -loop 0 -delay 50 -interpolate nearest-neighbor -filter box +repage hiz_7-*png hiz.gif
+## Remove alpha from all images in the current folder
+$ find . -name "*.png" -exec convert "{}" -alpha off "{}" \;
+## Create a list for slider
+$ find assets/re2/girl_0/occlusion_culling/ -name "depth_sample*_scaled.png" -exec echo "- src: {}" \;
+## Apply gamma curve
+$ find . -name "*sample*_scaled.png" -execdir sh -c 'printf "%s\n" "${0%.*}"' {} ';' | xargs -l bash -c 'convert -gamma 1.3 $0.png $0.png'
+## Remove blue channel
+$ convert main_rt2_rg.png -channel Blue -fx 0 +channel main_rt2_rg.png
+```
