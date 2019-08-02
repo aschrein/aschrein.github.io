@@ -25,7 +25,7 @@ Frame breakdowns are among those things I really like on the internet. I'm not a
 
 I couldn't find any material on RE Engine on the internet, so everything here is an (hopefully)educated guess. I'm covering about 90% of the frame structure here and just the general gist of the algorithms. It's really difficult to cover more as it would require more experience than I have and time to reverse engineer the shaders.
 
-As always, check out cool links at the bottom and don't forget to reach out if you find any mistakes or suggestions. I really like learning from the feedback.
+As always, check out cool links at the bottom and don't forget to reach out if you find any mistakes or have suggestions. I really like learning from the feedback.
 
 ## Table of content
 * this unordered seed list will be replaced
@@ -48,13 +48,13 @@ This pass builds a histogram of brightness based on the previous hdr image and m
 ![prevhdr](/assets/re2/girl_0/whitepoint/prev_hdr_scaled.png)
 
 ### Determine occluders
-Occluders' bounding boxes are being tested against view frustum and an indirect argument buffer is filled.  
+Occluders' bounding boxes are being tested against view frustum in a compute shader and an indirect argument buffer is filled.  
 ### Occlusion culling
 Occluders are rendered into a small resolution depth buffer and then bounding boxes are being tested against this depth buffer.  
 
 {% include slider.html selector="girl_0_occlusion_depth" %}  
 
-Used depth buffer is 4x multisampled. Probably to compensate for low res and be more conservative.
+Used depth buffer is 4x multisampled. Probably to compensate for low res.
 
 ![occlusion culling 0](/assets/re2/girl_0/occlusion_culling/occlusion_culling_geometry_scaled.png)
 
@@ -115,7 +115,7 @@ Global illumination diffuse component.
 Global illumination specular component.
 
 ### Update shadowmaps
-Per light shadowmaps are being updated for those lights that are affected by dynamic objects. Each shadow map is allocated in a big texture array.  
+Per light shadowmaps are being updated for those lights that are affected by dynamic objects. Each shadow map is allocated on a big texture array.  
 
 {% include slider.html selector="girl_0_shadow_maps" %}
 
