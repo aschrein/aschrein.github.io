@@ -251,3 +251,9 @@ The actual planes used to render the smoke.
 [4]: https://community.amd.com/community/gaming/blog/2015/05/12/high-tech-fear--alien-isolation
 
 
+## Comments
+
+<blockquote class="twitter-tweet"><p lang="en" dir="ltr">New blog post: Resident Evil 2 Frame Breakdown. Warning: Tons of images <a href="https://t.co/INzXDCxWo2">https://t.co/INzXDCxWo2</a></p>&mdash; Anton Schreiner (@kokoronomagnet) <a href="https://twitter.com/kokoronomagnet/status/1157331218792402945?ref_src=twsrc%5Etfw">August 2, 2019</a></blockquote> <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script> 
+
+<blockquote class="reddit-card" data-card-created="1564837900"><a href="https://www.reddit.com/r/GraphicsProgramming/comments/clik3i/resident_evil_2_frame_breakdown/">Resident Evil 2 Frame breakdown</a> from <a href="http://www.reddit.com/r/GraphicsProgramming">r/GraphicsProgramming</a></blockquote>
+<script async src="//embed.redditmedia.com/widgets/platform.js" charset="UTF-8"></script>
