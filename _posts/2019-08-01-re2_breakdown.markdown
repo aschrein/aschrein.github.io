@@ -42,6 +42,9 @@ Ripples are used for water rendering which is not present in this frame.
 Some of the results are being copied into a staging buffer which suggests that results may be used by CPU. 
 ### Light list calculation
 This pass generates visible light list by testing light frustums against the view frustum. The result is visible light list and some sort of 3d table that maps view space positions to the corresponding lights.
+
+Also per light visible instance lists are computed for later use in shadow map update.
+ 
 ### White point
 This pass builds a histogram of brightness based on the previous hdr image and metering table. Then determines the whitepoint based on that data.  
 ![metering table](/assets/re2/girl_0/whitepoint/metering_map_scaled.png)
