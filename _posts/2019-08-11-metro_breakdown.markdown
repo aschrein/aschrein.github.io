@@ -29,7 +29,7 @@ image_sliders:
 ## General notes 
 All results have been acquired on a pretty old setup(i7 3770+RX 480) running on DirectX 11 with extreme quality and using RenderDoc and Nsight.  
 
-I learned a lot from this breakdonw and hope you will too.
+I learned a lot from this breakdown and hope you will too.
 
 I couldn't find any material on 4A Engine on the internet, so everything here is an (hopefully)educated guess. I'm covering about 90% of the frame structure here and just the general gist of the algorithms. It's really difficult to cover more as it would require more experience than I have and time to reverse engineer the shaders.
 
@@ -138,7 +138,7 @@ It's similar to the technique described in \[[8]\] but here the generation is dy
 
 ![untitled](/assets/metro/11_LPV/lpv_scaled.gif)  
 
-Red LPV where z dimention is unwrapped with time;
+Red LPV where z dimension is unwrapped with time;
 
 ![untitled](/assets/metro/11_LPV/crop.png)  
 
@@ -147,7 +147,7 @@ RSM from the previous pass is used to compute LPV.
 The result of this pass is 3 volume textures(for red, green and blue wavelengths) of 4x16 bit floats for constant and linear coefficients of spherical harmonics. Spherical harmonics encode low frequency component of irradiance field. Later it's used to approximate radiance for diffuse surfaces. The visualization of LPV shows the fields of vectors at voxel centers with (x, y, z) equal to linear coefficients of SH for red, green and blue LPVs. The direction of linear coefficients is an average light direction at the point.
 
 The pass is comprised of two stages.
-Injection and propogation is merged in one stage and in the second stage the volumes are mixed with 6-12 other volumes, presumably it's some kind of temporal filter with LPVs from previous frames.
+Injection and propagation is merged in one stage and in the second stage the volumes are mixed with 6-12 other volumes, presumably it's some kind of temporal filter with LPVs from previous frames.
 
 ![untitled](/assets/metro/11_LPV/volume_ss.png)  
 
@@ -239,7 +239,7 @@ The shader then does 16 samples from shadow map per light. Light table and light
 
 {% include slider.html selector="metro_emissive" %}  
 
-Emissive parts are rendered: lamps, mushroms, fire etc.
+Emissive parts are rendered: lamps, mushrooms, fire etc.
 
 ### Skydome
 
