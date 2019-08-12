@@ -18,4 +18,6 @@ $ find assets/re2/girl_0/occlusion_culling/ -name "depth_sample*_scaled.png" -ex
 $ find . -name "*sample*_scaled.png" -execdir sh -c 'printf "%s\n" "${0%.*}"' {} ';' | xargs -l bash -c 'convert -gamma 1.3 $0.png $0.png'
 ## Remove blue channel
 $ convert main_rt2_rg.png -channel Blue -fx 0 +channel main_rt2_rg.png
+## Crop in tiles
+magick convert pos.png -crop 1024x1024 +repage tiles/norm_tiles%03d.png
 ```

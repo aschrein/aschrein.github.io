@@ -28,7 +28,8 @@
   settings:
     height: 512
     effect: "'slide'"
-    transitionDuration: 60
+    transitionDuration: 16
+    interval: 4000000
 
 - selector: girl_0_occlusion_depth
   bullets: true
@@ -45,7 +46,8 @@
   settings:
     height: 512
     effect: "'slide'"
-    transitionDuration: 60
+    transitionDuration: 16
+    interval: 4000000
 
 - selector: girl_0_shadow_maps
   bullets: true
@@ -62,7 +64,8 @@
   settings:
     height: 512
     effect: "'slide'"
-    transitionDuration: 60
+    transitionDuration: 16
+    interval: 4000000
 
 - selector: girl_0_integrated_light
   bullets: true
@@ -87,4 +90,254 @@
   settings:
     height: 512
     effect: "'slide'"
-    transitionDuration: 60
+    transitionDuration: 16
+    interval: 4000000
+
+- selector: metro_g_buffer
+  bullets: true
+  captions: true
+  images:
+    - src: assets/metro/5_g_buffer/rt0_rgb.png
+      alt: RT0.rgb Albedo
+    - src: assets/metro/5_g_buffer/rt0_a.png
+      alt: RT0.a Baked AO
+    - src: assets/metro/5_g_buffer/rt1_rgb.png
+      alt: RT1.rgb View space normals
+    - src: assets/metro/5_g_buffer/rt1_a.png
+      alt: RT1.a Misc
+    - src: assets/metro/5_g_buffer/rt2_rgb.png
+      alt: RT2.rgb Specular reflection color
+    - src: assets/metro/5_g_buffer/rt2_a.png
+      alt: RT2.a Roughness
+    - src: assets/metro/5_g_buffer/rt3_rg.png
+      alt: RT3.rg View space velocity
+    - src: assets/metro/5_g_buffer/depth.png
+      alt: Depth
+  settings:
+    height: 512
+    effect: "'slide'"
+    transitionDuration: 16
+    interval: 4000000
+
+- selector: metro_ao
+  bullets: true
+  captions: true
+  images:
+    - src: assets/metro/7_AO/ao_05_1.png
+      alt: Ambient Occlusion
+    - src: assets/metro/7_AO/ao_05_1_spheres.png
+      alt: Ambient Occlusion wiht injected spheres
+  settings:
+    height: 512
+    effect: "'slide'"
+    transitionDuration: 16
+    interval: 4000000
+
+- selector: metro_ao_mask
+  bullets: true
+  captions: true
+  images:
+    - src: assets/metro/9_env_light_ao/mask/mask_r.png
+      alt: Cloud shadows
+    - src: assets/metro/9_env_light_ao/mask/mask_g.png
+      alt: AO
+    - src: assets/metro/9_env_light_ao/mask/mask_b.png
+      alt: Cloud shadows
+  settings:
+    height: 512
+    effect: "'slide'"
+    transitionDuration: 16
+    interval: 4000000
+
+
+- selector: metro_env_ao
+  bullets: true
+  captions: true
+  images:
+    - src: assets/metro/9_env_light_ao/diffuse_0_01.png
+      alt: Diffuse
+    - src: assets/metro/9_env_light_ao/diffuse_0_01_no_ao_area.png
+      alt: Diffuse without AO and enviromental shadows
+    - src: assets/metro/9_env_light_ao/diffuse_0_01_no_ao_area_no_lp.png
+      alt: Diffuse without AO, enviromental shadows and lightprobes
+    - src: assets/metro/9_env_light_ao/deffuse_lightprobes_only.png
+      alt: Lightprobes only
+    - src: assets/metro/9_env_light_ao/specular_0_001.png
+      alt: Specular
+    - src: assets/metro/9_env_light_ao/specular_0_001_no_ssr.png
+      alt: Specular no SSR
+    - src: assets/metro/9_env_light_ao/specular_ssr_only.png
+      alt: Specular SSR only
+  settings:
+    height: 512
+    effect: "'slide'"
+    transitionDuration: 16
+    interval: 4000000
+
+- selector: metro_rsm
+  bullets: true
+  captions: true
+  images:
+    - src: assets/metro/10_sun_shadow/sm.png
+      alt: Depth
+    - src: assets/metro/10_sun_shadow/normals.png
+      alt: Normals
+    - src: assets/metro/10_sun_shadow/radiant_flux.png
+      alt: Radiant flux
+  settings:
+    height: 512
+    effect: "'slide'"
+    transitionDuration: 16
+    interval: 4000000
+
+- selector: metro_imposters
+  bullets: true
+  captions: true
+  images:
+    - src: assets/metro/13_imposters_update/albedo_tiles035.png
+      alt: Albedo
+    - src: assets/metro/13_imposters_update/norm_tiles035.png
+      alt: Normals
+    - src: assets/metro/13_imposters_update/pos_tiles035.png
+      alt: Displacement
+    
+  settings:
+    height: 512
+    effect: "'slide'"
+    transitionDuration: 16
+    interval: 4000000
+
+- selector: metro_gi
+  bullets: true
+  captions: true
+  images:
+    - src: assets/metro/16_light/gi/gi_minus.png
+      alt: GI from LPV contribution
+    - src: assets/metro/16_light/gi/gi_spheres.png
+      alt: GI from LPV contribution with sphere injection
+  settings:
+    height: 512
+    effect: "'slide'"
+    transitionDuration: 16
+    interval: 4000000
+
+- selector: metro_sun_light
+  bullets: true
+  captions: true
+  images:
+    - src: assets/metro/16_light/sun/diffuse.png
+      alt: Diffuse
+    - src: assets/metro/16_light/sun/diffuse_minus.png
+      alt: Diffuse difference
+    - src: assets/metro/16_light/sun/diffuse_minus_no_shadows.png
+      alt: Diffuse difference without shadows
+    - src: assets/metro/16_light/sun/specular.png
+      alt: Specular
+    - src: assets/metro/16_light/sun/specular_minus.png
+      alt: Specular difference
+  settings:
+    height: 512
+    effect: "'slide'"
+    transitionDuration: 16
+    interval: 4000000
+
+- selector: metro_local_light
+  bullets: true
+  captions: true
+  images:
+    - src: assets/metro/16_light/local/local.png
+      alt: Diffuse
+    - src: assets/metro/16_light/local/local_minus.png
+      alt: Diffuse difference
+    - src: assets/metro/16_light/local/local_minus_no_shadows.png
+      alt: Diffuse difference without shadows
+    - src: assets/metro/16_light/local/local_minus_shadow_checker.png
+      alt: Diffuse difference with checkerboard shadows
+  settings:
+    height: 512
+    effect: "'slide'"
+    transitionDuration: 16
+    interval: 4000000
+
+- selector: metro_skydome
+  bullets: true
+  captions: true
+  images:
+    - src: assets/metro/19_skydome/diffuse.png
+      alt: Skydome applied
+    - src: assets/metro/19_skydome/diffuse_minus.png
+      alt: Difference
+    - src: assets/metro/19_skydome/prev.png
+      alt: Skydome applied to the previous HDR image
+    - src: assets/metro/19_skydome/velocity_minus.png
+      alt: Difference applied to the velocity map
+  settings:
+    height: 512
+    effect: "'slide'"
+    transitionDuration: 16
+    interval: 4000000
+
+- selector: metro_combine
+  bullets: true
+  captions: true
+  images:
+    - src: assets/metro/21_combine/combine.png
+      alt: Combined
+    - src: assets/metro/21_combine/combine_minus.png
+      alt: Difference
+    - src: assets/metro/21_combine/combine_minus_no_diffuse.png
+      alt: Difference without diffuse
+    - src: assets/metro/21_combine/combine_minus_no_specular.png
+      alt: Difference without specular
+    - src: assets/metro/21_combine/combine_minus_no_diffuse_no_specular.png
+      alt: Difference without specular and diffuse
+    - src: assets/metro/21_combine/combine_minus_no_specular_no_fog.png
+      alt: Difference without specular and fog
+    - src: assets/metro/21_combine/combine_yellow_dielectric.png
+      alt: Inject orange insulator spheres
+    - src: assets/metro/21_combine/combine_yellow_metal.png
+      alt: Inject orange metal spheres
+  settings:
+    height: 512
+    effect: "'slide'"
+    transitionDuration: 16
+    interval: 4000000
+
+- selector: metro_emissive
+  bullets: true
+  captions: true
+  images:
+    - src: assets/metro/18_emissive/emissive_minus.png
+      alt: Emissive
+    - src: assets/metro/18_emissive/emissive_src.png
+      alt: Emissive from a different frame
+    - src: assets/metro/18_emissive/fire_check.png
+      alt: Fire texture replaced with checkerboard
+  settings:
+    height: 512
+    effect: "'slide'"
+    transitionDuration: 16
+    interval: 4000000
+
+- selector: metro_emissive_apply
+  bullets: true
+  captions: true
+  images:
+    - src: /assets/metro/22_final/apply_emissive.png
+      alt: Emissive elements are applied
+    - src: assets/metro/18_emissive/emissive_after_fog.png
+      alt: A different frame
+    - src: assets/metro/18_emissive/emissive_after.png
+      alt: A different frame without fog
+    - src: assets/metro/21_combine/bonus/combine_minus.png
+      alt: A different frame
+    - src: assets/metro/21_combine/bonus/combine_minus_no_fog.png
+      alt: A different frame without fog
+  settings:
+    height: 512
+    effect: "'slide'"
+    transitionDuration: 16
+    interval: 4000000
+
+
+
