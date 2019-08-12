@@ -157,9 +157,9 @@
     - src: assets/metro/9_env_light_ao/diffuse_0_01.png
       alt: Diffuse
     - src: assets/metro/9_env_light_ao/diffuse_0_01_no_ao_area.png
-      alt: Diffuse without AO and enviromental shadows
+      alt: Diffuse without AO and cloud shadows
     - src: assets/metro/9_env_light_ao/diffuse_0_01_no_ao_area_no_lp.png
-      alt: Diffuse without AO, enviromental shadows and lightprobes
+      alt: Diffuse without AO, cloud shadows and lightprobes
     - src: assets/metro/9_env_light_ao/deffuse_lightprobes_only.png
       alt: Lightprobes only
     - src: assets/metro/9_env_light_ao/specular_0_001.png
