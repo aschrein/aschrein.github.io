@@ -126,7 +126,7 @@
     - src: assets/metro/7_AO/ao_05_1.png
       alt: Ambient Occlusion
     - src: assets/metro/7_AO/ao_05_1_spheres.png
-      alt: Ambient Occlusion wiht injected spheres
+      alt: Ambient Occlusion with injected spheres
   settings:
     height: 512
     effect: "'slide'"

@@ -55,6 +55,8 @@ Updates a horizontal band 1024x32 each frame, takes 32 frames to fully update.
 I guess it's an approximate shadow map for the terrain from a sky dome. It seems to be rendered from the same longitude always even at dawn and noon.  
 It's used to compensate for the finite area that shadow cascades cover i.e. they are applied for geometry far away from the camera.
 
+***Update*** I think it's called 'Elevation map' from Dietrich, Sim. 2000 and \[[12]\].
+
 ![untitled](/assets/metro/1_terrain_heightmap/cmp.gif)
 
 Removing this map removes distant shadows.
@@ -283,7 +285,7 @@ For mushrooms and fire light sources are placed.
 
 Rendered on a downsampled image.
 
-### Tomenap+GUI
+### Tonemap+GUI
 
 ![untitled](/assets/metro/22_final/tonemap_gui.png)
 
@@ -383,11 +385,10 @@ mul r4.xyz, r2.xyzx, r3.zzzz
 
 [10]: https://kosipovicportfolio.files.wordpress.com/2018/01/specialization_1_karol_osipovic_final.pdf
 
-
 [11][Ángel Ortiz: A Primer On Efficient Rendering Algorithms & Clustered Shading.][11]
 
 [11]: http://www.aortiz.me/2018/12/21/CG.html
 
+[12][Deferred Shading in S.T.A.L.K.E.R.][12]
 
-
-
+[12]: https://developer.nvidia.com/gpugems/GPUGems2/gpugems2_chapter09.html
