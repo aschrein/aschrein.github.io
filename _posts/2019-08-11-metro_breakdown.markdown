@@ -127,8 +127,6 @@ Cloud shadows, AO and lightprobes are used to compute diffuse and specular compo
 Lightprobe table is used where each value contains 32 bit mask with 1 bit per lightprobe, up to 32 lightprobes per scene. Usual log scale screen space table is employed \[[11]\]. Table data is streamed from CPU.  
 SSR uses previous frame HDR image with different mip levels used for different roughness.
 
-The data for lightprobe table is streamed from CPU.
-
 ### Sun reflective shadow map
 {% include slider.html selector="metro_rsm" %}  
 
@@ -392,3 +390,14 @@ mul r4.xyz, r2.xyzx, r3.zzzz
 [12][Deferred Shading in S.T.A.L.K.E.R.][12]
 
 [12]: https://developer.nvidia.com/gpugems/GPUGems2/gpugems2_chapter09.html
+
+[13][DX11 Effects in Metro 2033: The Last Refuge][13]
+
+[13]: http://developer.download.nvidia.com/presentations/2010/gdc/metro.pdf
+
+## Comments
+
+<blockquote class="twitter-tweet"><p lang="en" dir="ltr">New blog post: Metro Exodus Frame Breakdown <a href="https://t.co/gEjFBzLDnI">https://t.co/gEjFBzLDnI</a></p>&mdash; Anton Schreiner (@kokoronomagnet) <a href="https://twitter.com/kokoronomagnet/status/1160919905438490626?ref_src=twsrc%5Etfw">August 12, 2019</a></blockquote> <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+
+<blockquote class="reddit-card" data-card-created="1565684298"><a href="https://www.reddit.com/r/GraphicsProgramming/comments/cpd3u0/metro_exodus_frame_breakdown/">Metro Exodus Frame Breakdown</a> from <a href="http://www.reddit.com/r/GraphicsProgramming">r/GraphicsProgramming</a></blockquote>
+<script async src="//embed.redditmedia.com/widgets/platform.js" charset="UTF-8"></script>
