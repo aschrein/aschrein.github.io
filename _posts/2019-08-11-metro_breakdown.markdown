@@ -27,7 +27,7 @@ image_sliders:
 {% include slider_styles.html %}
 
 ## General notes 
-All results have been acquired on a pretty old setup(i7 3770+RX 480) running on DirectX 11 with extreme quality and using RenderDoc and Nsight.  
+All results have been acquired on a pretty old setup(i7 3770+RX 480) running on DirectX 11 with extreme quality and using RenderDoc and Nsight. I don't have an RTX card so the fancy features aren't covered.  
 
 I learned a lot from this breakdown and hope you will too.
 
@@ -45,6 +45,8 @@ Please reach out if you find any mistakes.
 ![untitled](/assets/metro/final.png)  
 
 This is the frame we are going to break down. Looking at the dawn with bratukha after the arrival on Volga mission.
+
+The scene exhibits a lot of the engine features. It's not the most beautiful, in my opinion. I prefer the Caspian mission, probably because of the contrast with everlasting winter in Moscow.
 
 ### Landscape heightmap extrude
 ![untitled](/assets/metro/1_terrain_heightmap/src_0_05.png)  
@@ -281,7 +283,7 @@ For mushrooms and fire light sources are placed.
 
 ![untitled](/assets/metro/22_final/lens_flare.png)
 
-Rendered on a downsampled image.
+Rendered on the blurred image from the previous pass.
 
 ### Tonemap+GUI
 
@@ -292,6 +294,10 @@ Film grain, edge sharpening, bloom, blue shift etc.
 {% include slider_scripts.html %}
 
 ### Conclusion
+
+The deferred shading with clustered light system enables tens of local light sources per frame making a lot of difference in night/underground scenes. While the global illumination system kicks visuals to the top during the day. It's clear that they've put a lot of effort to make sure the engine pushes top pixels in every setup.
+
+I would love to see this engine with GPU culling+Draw Indirect pipeline from RE2. It appears to me that their CPU based culling could do a better job, but I don't have numbers here.
 
 That's it. I hope you enjoyed the trip. I skipped some of the minor passes but hope that you still have an image of what is going on inside the frame.
 
