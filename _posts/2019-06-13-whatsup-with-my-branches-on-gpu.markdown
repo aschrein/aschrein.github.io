@@ -400,6 +400,8 @@ If your cfg is complex it typically makes sense to split the kernel and classify
 
 It's worth mentioning that there are some techniques to grapple with divergence on HW level, some of them are Dynamic Warp Formation\[[7]\] and predicated execution for small branches.
 
+***Update*** One of the advanced techniques for dynamic work balancing is called ‘persistent threads’ read more at \[[19]\]. The gist of this method is that you create just enough threads to saturate your GPU with a generic kernel which dynamically grabs job items off a global queue using an atomic counter. With coherent memory like the one you could have with CUDA(Unified memory in NV terminology) it becomes even more interesting because you can stream work from CPU to GPU online.
+
 ## Divergent memory access
 ***Update Jun 26, 2019*** Added a few thoughts on memory access in a divergent control flow. It feels like there's more of the speculation going on than usual. So if you spot any errors please reach out.  
 On SIMD architecture every load is gather and every store is scatter. A memory operation is generated for each active lane when a store/load instruction is issued, typically if inactive lanes have invalid addresses at the corresponding address slots, no exception is going to be generated.  
@@ -408,6 +410,7 @@ Memory coalescing machinery is going to take care of optimizing apparent pattern
 Now, what about this 10000 pound elephant in the room? Things indeed might get hairy if you are trying to sample a texture in a branch. Particularly, if you are sampling in a pixel shader and use anisotropic/trilinear filtering - those kind of features depend on HW gradients which require that all lanes participating in a 2x2 pixel group have valid arguments. The way it works is that HW packs adjacent pixel groups of 2x2 in the same wave. This has a consequence that 1 pixel triangle is going to spawn 4 pixels and at least 1 wave, the same happens with lone pixels on triangle boundaries. Invisible pixels are called helpers. Some helper pixels are going to have their barycentric coordinates outside the triangle(not sure what happens here, reach out if you do).  
 A good read on the subject matter is [DirectX-Specs 16.8.2 Restrictions on Derivative Calculations](https://microsoft.github.io/DirectX-Specs/d3d/archive/D3D11_3_FunctionalSpec.htm#16.8%20Interaction%20of%20Varying%20Flow%20Control%20With%20Screen%20Derivatives). In short the spec allows such samples if the texture address is a shader input or a statically indexed constant. It makes sense because even if the HW does not know how to handle divergent samples, its compiler can just hoist that sample from the branch and eliminate the issue completely. I expect other APIs to enforce similar behaviour.  
 Worth mentioning that the amount of in-flight memory requests being served is somehow limited by the HW. So if you have a kernel with tons of samples or memory loads, it might stall just trying to issue those requests. Which means that some amount of interleaving of ALU instructions and memory requests is needed to avoid such stalls. But fear not, it's usually taken care of in the compiler, fortunately shader memory models are quite permissive when it comes to reordering.  
+***Update*** [@Themaister](https://twitter.com/Themaister) Wrote a post \[[18]\] about his experiments with texture samples in a divergent control flow on different HW.  
 ### When to branch?
 I had one use case in mind. Purely theoretical yet may be interesting.  
 Sometimes you might be hitting the limit of on-flight requests on your HW. In this case it makes sense to reduce the amount of issued samples.
@@ -509,6 +512,13 @@ Note that this example is artificially bad, you shouldn't have that much of samp
 
 [17]: https://anteru.net/blog/2018/intro-to-compute-shaders/
 
+[18][Maister's Graphics Adventures: The weird world of shader divergence and LOD][17]
+
+[18]: http://themaister.net/blog/2019/09/12/the-weird-world-of-shader-divergence-and-lod/
+
+[19][A Specialized Concurrent Queue for Scheduling Irregular Workloads on GPUs][19]
+
+[19]: https://www.researchgate.net/publication/334691952_A_Specialized_Concurrent_Queue_for_Scheduling_Irregular_Workloads_on_GPUs
 
 
 # Comments
