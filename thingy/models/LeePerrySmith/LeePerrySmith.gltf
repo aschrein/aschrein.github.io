@@ -1,0 +1,188 @@
+{
+  "accessors": [
+    {
+      "bufferView": 0,
+      "componentType": 5123,
+      "count": 53052,
+      "max": [
+        9278
+      ],
+      "min": [
+        0
+      ],
+      "type": "SCALAR"
+    },
+    {
+      "bufferView": 1,
+      "componentType": 5126,
+      "count": 9279,
+      "max": [
+        4.276320934295654,
+        3.9725468158721924,
+        2.5903584957122803
+      ],
+      "min": [
+        -4.276320934295654,
+        -3.9725465774536133,
+        -2.5903775691986084
+      ],
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 2,
+      "componentType": 5126,
+      "count": 9279,
+      "max": [
+        0.999908447265625,
+        0.9993896484375,
+        0.999786376953125
+      ],
+      "min": [
+        -0.999603271484375,
+        -0.999847412109375,
+        -0.99993896484375
+      ],
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 3,
+      "componentType": 5126,
+      "count": 9279,
+      "max": [
+        0.9949300289154053,
+        0.9975799918174744
+      ],
+      "min": [
+        0.005049999803304672,
+        0.009069979190826416
+      ],
+      "type": "VEC2"
+    }
+  ],
+  "asset": {
+    "generator": "Khronos Blender glTF 2.0 exporter",
+    "version": "2.0"
+  },
+  "bufferViews": [
+    {
+      "buffer": 0,
+      "byteLength": 106104,
+      "byteOffset": 0,
+      "target": 34963
+    },
+    {
+      "buffer": 0,
+      "byteLength": 111348,
+      "byteOffset": 106104,
+      "target": 34962
+    },
+    {
+      "buffer": 0,
+      "byteLength": 111348,
+      "byteOffset": 217452,
+      "target": 34962
+    },
+    {
+      "buffer": 0,
+      "byteLength": 74232,
+      "byteOffset": 328800,
+      "target": 34962
+    }
+  ],
+  "buffers": [
+    {
+      "uri": "LeePerrySmith_data.bin",
+      "byteLength": 403032
+    }
+  ],
+  "materials": [
+    {
+      "name": "Material.002",
+      "pbrMetallicRoughness": {
+        "baseColorFactor": [
+          0.665386974811554,
+          0.6653873324394226,
+          0.8227859139442444,
+          1
+        ],
+        "metallicFactor": 0
+      }
+    }
+  ],
+  "meshes": [
+    {
+      "name": "LeePerrySmith",
+      "primitives": [
+        {
+          "attributes": {
+            "NORMAL": 2,
+            "POSITION": 1,
+            "TEXCOORD_0": 3
+          },
+          "indices": 0,
+          "material": 0
+        }
+      ]
+    }
+  ],
+  "nodes": [
+    {
+      "name": "Camera",
+      "rotation": [
+        0.483536034822464,
+        0.33687159419059753,
+        -0.20870360732078552,
+        0.7804827094078064
+      ],
+      "translation": [
+        7.481131553649902,
+        5.34366512298584,
+        6.5076398849487305
+      ]
+    },
+    {
+      "name": "Lamp",
+      "rotation": [
+        0.16907575726509094,
+        0.7558802962303162,
+        -0.27217137813568115,
+        0.570947527885437
+      ],
+      "scale": [
+        1,
+        1,
+        0.9999999403953552
+      ],
+      "translation": [
+        4.076245307922363,
+        5.903861999511719,
+        -1.0054539442062378
+      ]
+    },
+    {
+      "mesh": 0,
+      "name": "LeePerrySmith",
+      "scale": [
+        1,
+        1.0000001192092896,
+        1.0000001192092896
+      ]
+    }
+  ],
+  "scene": 0,
+  "scenes": [
+    {
+      "name": "AuxScene",
+      "nodes": [
+        2
+      ]
+    },
+    {
+      "name": "Scene",
+      "nodes": [
+        1,
+        0
+      ]
+    }
+  ]
+}
