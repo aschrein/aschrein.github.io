@@ -4,28 +4,33 @@ title:  "What's up with my branch on GPU?"
 date:   2019-06-13 08:19:16 +0000
 categories: jekyll update
 ---
-
 ## About
-This post is a small writeup addressed to programmers who are interested to learn more about how GPU handles branching and targeted as an introduction to the topic. I recommend skimming through \[[1]\], \[[2]\], \[[17]\] and \[[8]\] to get an idea of what GPU execution model looks like in general because here we're gonna take a closer look at one particular detail. A curious reader shall find all references at the end of the post. If you find any mistakes please reach out.
+This post is addressed to those who are interested to learn more about how GPU handles branching and targeted as an introduction to the topic. I recommend skimming through \[[1]\], \[[2]\], \[[17]\] and \[[8]\] to get an idea of what GPU execution model looks like in general because here we're gonna take a closer look at one particular detail. A curious reader shall find all references at the end of the post. If you find any mistakes please reach out.
+
+### TL;DR;
+GPUs are like slow CPUs with many cores, wide vector units and memory bus. GPUs handle branches the same way vectorized CPU code does: scalarization. Your code is being linearized into a linear stream of vector instructions and masking is used to discard results for disabled lanes. Linearization means runtime is bound by runtime of the slowest lane.
+{: .info}
+
 
 ## Table of content
 * this unordered seed list will be replaced
 {:toc}
 ## Vocabulary
-* GPU - Graphics processing unit
-* Flynn's taxonomy
-  * SIMD - Single instruction multiple data
-  * SIMT - Single instruction multiple threads
-* SIMD wave - Thread executing in SIMD mode
-* Lane - designated data stream in SIMD model
-* SMT - Simultaneous multi-threading (Intel Hyper-threading)\[[2]\]
-  * Multiple threads share computational resources of a core
-* IMT - Interleaved multi-threading\[[2]\]
-  * Multiple threads share computational resources of a core but only one executes per clock
-* BB - Basic Block - linear sequence of instructions with only one jump at the end
-* ILP - Instruction Level Parallelism\[[3]\]
-* ISA - Instruction Set Architecture
-* SLM - Shared Local Memory, Group Local
+
+| GPU | Graphics processing unit |
+| SIMD | Single instruction multiple data: Flynn's taxonomy |
+| SIMT | Single instruction multiple threads |
+| SPMD | Single program multiple data - a model of programming used in shaders/ispc when vectorization is implicit |
+| SIMD wave | Thread executing in SIMD mode |
+| Lane | designated data stream in SIMD model |
+| SMT | Simultaneous multi-threading (Intel Hyper-threading)\[[2]\]* Multiple threads share computational resources of a core |
+| IMT | Interleaved multi-threading\[[2]\]* Multiple threads share computational resources of a core but only one executes per clock |
+| BB | Basic Block - linear sequence of instructions with only one jump at the end |
+| CFG | Control Flow Graph - a graph whose nodes are BB and edges represent jumps |
+| ILP | Instruction Level Parallelism\[[3]\] |
+| ISA | Instruction Set Architecture |
+| SLM | Shared Local Memory, Group Local |
+
 
 Throughout this post I'm referring to this fictional taxonomy. It approximates how a modern GPU is organized.
 ```
@@ -52,35 +57,52 @@ group +
       |- ...
       +- thread N-1
 ```
-Other names:
-* core could be CU, SM, EU
-* wave could be wavefront, HW thread, warp, context
-* lane could be SW thread
+Also some names:
+
+| core | CU(compute unit), SM(streaming multiprocessor), EU(execution unit)  |
+| wave | wavefront, HW thread, warp, context |
+| lane | SW thread(called sometimes) |
+
 
 ## What is so special about GPU core compared to CPU core?
-Any current generation single GPU core is less beefy compared to what you may encounter in CPU world: simple ILP/multi-issue\[[6]\] and prefetch\[[5]\], no speculation or branch/return prediction. All of this coupled with tiny caches frees up quite a lot of the die area which gets filled with more cores. Memory load/store machinery is able to handle bandwidths of an order of magnitude larger(not true for integrated/mobile GPUs) than that of a typical CPU at a cost of more latency. GPU employs SMT\[[2]\] to hide this latency - while one wave is stalled, another utilizes free computation resources of a core. Because of the high latency for memory accesses GPU keeps all the contexts in registers, spills are supported but to be avoided at all cost. Typically the number of waves handled by one core depends on the number of registers used and determined dynamically by allocating on a fixed register file\[[8]\]. The instruction scheduling is hybrid dynamic and static\[[6]\] \[[11] 4.4\]. SMT cores execute in SIMD mode yielding high number of FLOPS.  
-From software point of view the programmer usually writes his kernel in some high level language which does not expose all the HW details like SIMD width or instruction scheduling. However, typically kernels get compiled into SIMD instructions where each lane corresponds to one software thread. Therefore the actual hardware thread(wave) executes N software threads in lockstep. Different ISAs expose their SIMD nature differently, some use explicit SIMD instructions(Intel SSE/AVX and Intel Gen) some use implicit(AMD GCN, Nvidia PTX).  
+Any current generation single GPU core is less beefy compared to what you may encounter in the CPU world: simple ILP/multi-issue\[[6]\] and prefetch\[[5]\], no speculation or branch/return prediction. All of this coupled with tiny caches frees up quite a lot of the die area which gets filled with more cores with wider vector units. Memory load/store machinery is able to handle bandwidths of an order of magnitude larger(not true for integrated/mobile GPUs that share the bus with CPU) than that of a typical CPU at a cost of more latency.
+
+Sometimes latency limits bandwidth. Async memory requests need tracking, tracking needs state, state needs on-die area, on-die area is limited -> async mem requests are a limited resource. When an on-fly memory request queue gets filled the next mem request just blocks execution. That could be a corner case with a long stream of independent memory stores/writes.
+{: .note}
+
+GPU employs SMT\[[2]\] to hide latency - while one wave is stalled, another utilizes free computation resources of a core. Because memory latency on GPU is quite high GPUs usually have an explicit big register file. Typically the number of waves handled by one core depends on the number of registers used and determined dynamically by allocating on a fixed register file\[[8]\]. The instruction scheduling is hybrid dynamic and static\[[6]\] \[[11] 4.4\].
+
+SMT cores execute in SIMD mode.  
+{: .note}
+
+From a software point of view some high level language is used with implicit vectoriztion model which does not expose all the HW details like SIMD width or instruction scheduling. However, typically kernels get compiled into SIMD instructions where each lane corresponds to one software thread. Therefore the actual hardware thread(wave) executes N software threads in lockstep.  
 ### Illustrations of GPU core
 ![Figure 1](/assets/legend.png)  
 ###### Diagram color-state coding
 ![Figure 1](/assets/interleaving.png)  
-###### Figure 1. Execution history 4:2
+###### Figure 1. Execution trace 4:2
 Made on my toy [gpu simulator](https://aschrein.github.io/guppy/)(not user friendly).  
-The image shows history of execution mask where the x axis is time from left to right 1 clock per pixel and the y axis is 1 lane state per pixel and waves in SIMD32 mode from top to bottom. If it does not make sense to you, please return to it after reading the next sections.  
-This is an illustration of how a GPU core execution history might look like for a fictional configuration: four waves share one sampler and two ALU units. Wave scheduler dispatches two instructions from two waves each cycle. When a wave stalls on memory access or long ALU operation, scheduler switches to another pair of waves making ALU units almost 100% busy all the time.  
+The image shows a trace of an execution mask where the x axis is time from left to right(1 clock per pixel) and the y axis is 1 lane state per pixel and waves in SIMD32 mode from top to bottom.
+This is an illustration of how a GPU core Execution trace might look like for a fantasy configuration: four waves share one sampler and two ALU units. Wave scheduler dispatches two instructions from two waves each cycle. When a wave stalls on memory access or long ALU operation, the scheduler switches to another pair of waves making ALU units almost 100% busy all the time.  
+
+Having many threads executing on a single core makes features like speculative execution and branch prediction unnecessary for performance advancement. Because when one thread is blocked, another may start executing. That's why sometimes it's recommended to have graphics+compute workloads on GPU as they're likely to have orthogonal bottlenecks which is a win in the SMT model provided the register file can fit many threads.
+{: .note}
+
 ![Figure 2](/assets/interleaving_2.png)  
-###### Figure 2. Execution history 4:1
+###### Figure 2. Execution trace 4:1
 This is the same workload but this time only one wave issues instructions each cycle. Note how the second ALU is starving.  
 ![Figure 3](/assets/interleaving_3.png)  
-###### Figure 3. Execution history 4:4
+###### Figure 3. Execution trace 4:4
 This time four instructions are issued each cycle. Note that ALUs are oversubscribed in this case so two waves idle almost all the time(actually it's a pitfall of the scheduling algorithm).  
-***Update*** Read more about scheduling challenges\[[12]\].  
 
-Real world GPUs have different configurations per core: some may have up to 40 waves per core and 4 ALUs, some have fixed 7 waves and 2 ALUs. It all depends on a variety of factors and is determined through thorough architecture simulation process.
+Read more about scheduling challenges\[[12]\].
+{: .note}
+
+Real world GPUs have different configurations per core: some may have up to 40 waves per core and 4 ALUs, some have fixed 7 waves and 2 ALUs. It all depends on a variety of factors and is determined through a thorough architecture simulation process.
 Also real SIMD ALUs may have narrower width than those of waves they serve, it then takes multiple cycles to process one issued instruction, the multiplier is called 'chime' length\[[3]\].
 
 ## What is coherence/divergence?
-Lets look at the following kernel:
+Let's look at the following kernel:
 ###### Example 1
 ```c++
 uint lane_id = get_lane_id();
@@ -89,8 +111,8 @@ if (lane_id & 1) {
 }
 // Do some more
 ```
-Here we see instruction stream where execution path depends on the id of the lane being executed. Apparently different lanes have different values. So what should happen? There are different approaches to tackle this problem \[[4]\] but eventually they do approximately the same thing. One of such approaches is execution mask which I will focus on. This approach is employed by pre-Volta Nvidia and AMD GCN GPUs. The core of execution mask is that we keep a bit for each lane within wave. If a lane has 0 set to its corresponding execution bit no registers will be touched for that lane by the next issued instruction. Effectively the lane shouldn't feel the impact of all the executed instruction as long as it's execution bit is 0. The way it works is that a wave traverses control flow graph in depth first order keeping a history of branches taken until no bits are set. I think it's better to follow an example.  
-So lets say we have waves of width 8. This is how execution mask will look like for the kernel:
+Here we see code where the execution path depends on the id of the lane being executed. Apparently different lanes have different values. So what should happen? There are different approaches to tackle this problem \[[4]\] but eventually they do approximately the same thing. One of such approaches is using execution masks which I will focus on. This approach is employed by pre-Volta Nvidia and AMD GCN GPUs. The core of execution mask is that we keep a bit for each lane within the wave. If a lane has 0 set to its corresponding execution bit no registers will be touched for that lane by the next issued instruction. On source code level it's a bit more involved since the compiler can do tricks but eventually the observed state for a lane should be as if it was just scalar code. Effectively the lane shouldn't feel the impact(again, it's about the observable state) of all the executed instruction as long as it's execution bit is 0. The compiler usually linearizes control flow so that instruction pointer iterates over all instructions for all lanes. In the above example there'd be no branch! it's not needed on vector machine, you just switch lane bits. General GFC linearization is a big and complex topic but it should be straightforward for little code snippets.
+So let's say we have waves of width 8. This is how execution mask will look like for the linearized kernel:
 ###### Example 1. Execution mask history
 ```c++
                                   // execution mask
@@ -100,7 +122,49 @@ if (lane_id & 1) {                // 11111111
 }
 // Do some more                   // 11111111
 ```
-Now, take a look at more complicated examples:
+
+Quick intro into control flow graphs:
+```
+The above example is           Commonuse languages build so called
+equivalent to the              "Structured control flow" with these
+following CFG:                 single-entry-single-exit building blocks:
+     A                                A       A   A<-+
+    /|                               / \     /|   |  |
+   B |                              B   C   B |   |  |
+    \|                               \ /     \|   |  |
+     C                                D       C   B--+
+
+General CFGs may include something like this:
+    |   |
+    A   B
+   / \ / \  
+  C   D   E 
+  |   |   |
+Which we aren't really interested in because our languages and hardware are limited.
+
+The linearization could be thought of as the following transformation:
+   A   
+  / \  
+ B   C  ==> A->B->C->D
+  \ /  
+   D   
+
+    A 
+   /| 
+  B | ==> A->B->C
+   \| 
+    C 
+
+ A<-+
+ |  |
+ |  | ==> A-->B  Wait, nothing's changed. True. Loops must still be there but they
+ |  |     ^   |  are kind o special and are called 'back edges' meaning that linear
+ B--+     |   |  flow must go back.
+          +---+
+
+```
+
+Look at some more examples and try imagining how it's linearized:
 ###### Example 2
 ```c++
 uint lane_id = get_lane_id();
@@ -117,16 +181,61 @@ if (lane_id < 16) {
     // Do smth else
 }
 ```
-You'll notice that history is needed. With execution mask approach usually some kind of stack is employed by the HW. A naive approach is to keep a stack of tuples (exec_mask, address) and add reconvergence instructions that pop a mask from the stack and change the instruction pointer for the wave. In that way a wave will have enough information to traverse the whole CFG for each lane.  
+Ok that's enough.
+###### Example 4
+```c++
+uint var = get_lane_id();
+if (var < 16) {
+    while (true) {
+        if (foo(var) == 0) {
+            while (true) {
+                if (bar(var))
+                    break;
+                if (oops(var))
+                    goto changed_my_mind;
+            }
+            break;
+        } else {
+            continue;
+        }
+        if (fun(var) == 666) {
+            var = fen(var);
+        }
+    }
+} else {
+    while (true) {
+changed_my_mind:
+        var = boom(var);
+        if (var == 0)
+            break;
+    }
+}
+```
+I said that's enough!
+
+The last example won't work on most GPUs because of the goto. Not because of the goto per se but due to its target. It creates a loop with many entries. This is called irreducible control flow. In rigid terms reducible control flow graph is when you can split edged in two groups: one forms a connected DAG(simple if/else), the other one has edges where target dominates source(structured loops). 
+
+Dominator of A is such a B where A and B are nodes of the same connected component and every execution must come through B to reach A. In other words any variable declared at B is visible at A.
+{: .note}
+
+The above example could work if the compiler can make proper transformations to get rid of the nasty loop.
+{: .note}
+
+With the execution mask approach usually some kind of stack is employed by the HW to be able to traverse complicated graphs. A naive approach is to keep a stack of tuples (exec_mask, address) and add reconvergence instructions that pop a mask from the stack and change the instruction pointer for the wave. In that way a wave will have enough information to traverse the whole CFG for each lane.  
 From the performance point of view, it takes a couple of cycles just to process a control flow instruction because of all the bookkeeping. And don't forget that the stack has limited depth.  
-***Update*** By courtesy of [@craigkolb](https://twitter.com/craigkolb) I've read \[[13]\] in which it is noted that AMD GCN fork/join instructions select the path with the fewer number of threads first \[[11]4.6\] which guarantees that log2 depth of the mask stack is enough.  
-***Update*** Apparently it's almost always possible to inline everything/structurize CFGs in a shader and therefore keep all execution mask history in registers and schedule CFG traversal/reconvergence statically\[[15]\]. Skimming through LLVM backend for AMDGPU I didn't find any evidence of stack handling ever being emitted by the compiler.  
-  
+{: .note}
+
+By courtesy of [@craigkolb](https://twitter.com/craigkolb) I've read \[[13]\] in which it is noted that AMD GCN fork/join instructions select the path with the fewer number of threads first \[[11]4.6\] which guarantees that log2 depth of the mask stack is enough.
+{: .note}  
+
+Apparently it's almost always possible to inline everything/structurize CFGs in a shader and therefore keep all execution mask history in registers and schedule CFG traversal/reconvergence statically\[[15]\]. Skimming through LLVM backend for AMDGPU I didn't find any evidence of stack handling ever being emitted by the compiler.  
+{: .note}
+
 ### HW support for execution mask
 Now take a look at these control flow graphs(image from Wikipedia):  
 ![Figure 4](/assets/Some_types_of_control_flow_graphs.png)  
 ###### Figure 4. Some types of control flow graphs
-So what is the minimal set of mask control instructions we need to handle all cases? Here is how it looks in my toy ISA with implicit parallelization, explicit mask control and fully dynamic data hazard synchronization:
+So what is the minimal set of mask control instructions we need to handle all cases? Here is what it looks like in my toy ISA with implicit parallelization, explicit mask control and fully dynamic data hazard synchronization:
 ```nasm
 push_mask BRANCH_END         ; Push current mask and reconvergence pointer
 pop_mask                     ; Pop mask and jump to reconvergence instruction
@@ -138,7 +247,7 @@ mask_nz r0.x                 ; Set execution bit, pop mask if all bits are zero
 ; Set mask with (r0.x != 0), fallback to else in case no bit is 1
 br_push r0.x, ELSE, CONVERGE 
 ```
-Lets take a look at how d) case might look like.
+Let's take a look at what d) case might look like.
 
 ```nasm
 A:
@@ -150,20 +259,33 @@ C:
 D:
     ret
 ```
-I'm not an expert in control flow analysis or ISA design so I'm sure there is a case that could not be tamed with my toy ISA, although it does not matter as structured CFG should be enough for everyone.  
-***Update*** Read more on GCN support for control flow instructions \[[11]\] ch.4 and LLVM implementation \[[15]\].
 
-Bottom line:  
-* Divergence - emerging difference in execution paths taken by different lanes of the same wave
-* Coherence - lack of divergence
-* HW needs extra instructions/registers/stack to handle execution mask
-  * More branches - more register pressure
-* If one lane enters the branch all lanes enter the branch
-  * It could get as worse as 1/N efficiency
+Read more on GCN support for control flow instructions \[[11]\] ch.4 and LLVM implementation \[[15]\].
+{: .note}
+
+Bottom line:
+
+
+`Divergence` - Emerging difference in execution paths taken by different lanes of the same wave.
+{: .warning}
+
+Hardware needs extra instructions/registers/stack to handle execution mask. 
+{: .warning}
+
+More branches - more register pressure as more values have overlapping life spans.
+{: .warning}
+
+Control flow graph is linearized.  
+{: .warning}
 
 ## Execution mask handling examples
+This is not essential material so it's collapsed to save up some space.
+
+{::options parse_block_html="true" /}
+<details><summary class="info" markdown="span">Click to show!</summary>
+
 ### Fictional ISA
-I compiled the previous code snippets into my toy ISA and run it on simulator at SIMD32. Take a look at how it handles execution mask.  
+I compiled the previous code snippets into my toy ISA and ran it on the simulator at SIMD32. Take a look at how it handles execution masks.  
 ***Update*** Note that the toy simulator always selects the true path first which is not the best method.
 ###### Example 1
 ```nasm
@@ -180,8 +302,8 @@ BRANCH_END:
     ; // Do some more
     ret
 ```
-![Figure 5](/assets/branch_1.png)  
-###### Figure 5. Example 1 execution history
+![Figure 5](/assets/branch_1.png)
+###### Figure 5. Example 1 Execution trace
 Did you Notice the black area? It is wasted time. Some lanes are waiting for others to finish iterating.
 ###### Example 2
 ```nasm
@@ -201,7 +323,7 @@ LOOP_END:
     ret
 ```
 ![Figure 6](/assets/branch_2.png)
-###### Figure 6. Example 2 execution history
+###### Figure 6. Example 2 Execution trace
 ###### Example 3
 ```nasm
     mov r0.x, lane_id
@@ -222,10 +344,10 @@ CONVERGE:
     ret
 ``` 
 ![Figure 7](/assets/branch_3.png)
-###### Figure 7. Example 3 execution history
+###### Figure 7. Example 3 Execution trace
 
 ### AMD GCN ISA
-***Update*** GCN also uses an explicit mask handling, you can read more about it here\[[11] 4.x\]. I decided it's worth putting some examples with their ISA, thanks to [shader-playground](http://shader-playground.timjones.io) it is easy. Maybe some day I'll come across a simulator and pull out some cool diagrams.  
+***Update*** GCN also uses an explicit mask handling, you can read more about it here\[[11] 4.x\]. I decided it's worth putting some examples with their ISA, thanks to [shader-playground](http://shader-playground.timjones.io).  
 Note that the compiler is smart, you may get a different result. I tried to fool the compiler into not optimizing my branches by putting pointer chase loops in there then cleaned up the assembly.  
 Also note that S_CBRANCH_I/G_FORK and S_CBRANCH_JOIN instructions are not used in these snippets due to their simplicity/lack of compiler support. Therefore unfortunately the mask stack is not covered. If you know how to make the compiler spit stack handling please convey this information.  
 ***Update*** Watch this [talk](https://youtu.be/8K8ClHoZzHw) by [@SiNGUL4RiTY](https://twitter.com/SiNGUL4RiTY) about the implementation of vectorized control flow in LLVM backend employed by AMD.  
@@ -234,7 +356,7 @@ Also note that S_CBRANCH_I/G_FORK and S_CBRANCH_JOIN instructions are not used i
 ; uint lane_id = get_lane_id();
 ; GCN uses 64 wave width, so lane_id = thread_id & 63
 ; There are scalar s* and vector v* registers
-; Executon mask does not affect scalar or branch instructions
+; Execution mask does not affect scalar or branch instructions
     v_mov_b32     v1, 0x00000400      ; 1024 - group size
     v_mad_u32_u24  v0, s12, v1, v0    ; thread_id calculation
     v_and_b32     v1, 63, v0
@@ -367,7 +489,11 @@ CONVERGE:
 kmovw            k1, eax              ; Restore the execution mask
 ; // Do some more
     ret
-``` 
+```
+
+</details>
+{::options parse_block_html="false" /}
+
 ## How to fight divergence?
 I tried to come up with a simple yet complete illustration for the inefficiency introduced by combining divergent lanes.  
 Imagine a simple kernel like this:  
@@ -378,7 +504,6 @@ for (uint i = 0; i < iter_count; i++) {
     // Do smth
 }
 ```
-It may resemble a raymarcher, where it takes more iterations for missed rays near surface and less iterations for straight hit/miss rays.  
 Let's spawn 256 threads and measure the duration:  
 ![Figure 8](/assets/rand.png)  
 ###### Figure 8. Divergent threads execution time
@@ -390,57 +515,68 @@ This figure shows the same bars but this time iteration counts are sorted over t
 For this example the potential speedup is around 2x.  
 
 Bottom line:
-* Sort input data
+
+Sort input data
+{: .warning}
 
 For example, if you are writing a ray tracer, grouping rays with similar direction and position could be beneficial because they are likely to be traversing the same nodes in BVH. For more details please follow \[[10]\] and related articles.
+{: .note}
 
-* Keep CFG simple
+Keep CFG simple
+{: .warning}
 
-If your cfg is complex it typically makes sense to split the kernel and classify your data. For example, on a deferred shading pass you could detect tiles on the offscreen buffer that contain some expensive material and spawn pixel shaders separately for those tiles instead of doing full screen uber shader.
-
-It's worth mentioning that there are some techniques to grapple with divergence on HW level, some of them are Dynamic Warp Formation\[[7]\] and predicated execution for small branches.
-
-***Update*** One of the advanced techniques for dynamic work balancing is called ‘persistent threads’ read more at \[[19]\]. The gist of this method is that you create just enough threads to saturate your GPU with a generic kernel which dynamically grabs job items off a global queue using an atomic counter. With coherent memory like the one you could have with CUDA(Unified memory in NV terminology) it becomes even more interesting because you can stream work from CPU to GPU online.
+Complex CFG are not a problem per se they're just more likely to cause divergent execution. Really your only problem is divergence, not the complexity of the CFG.
+{: .note}
 
 ## Divergent memory access
-***Update Jun 26, 2019*** Added a few thoughts on memory access in a divergent control flow. It feels like there's more of the speculation going on than usual. So if you spot any errors please reach out.  
-On SIMD architecture every load is gather and every store is scatter. A memory operation is generated for each active lane when a store/load instruction is issued, typically if inactive lanes have invalid addresses at the corresponding address slots, no exception is going to be generated.  
+Generally speaking every SIMD load is a gather and every SIMD store is a scatter. A memory operation is generated for each active lane when a store/load instruction is issued, typically if inactive lanes have invalid addresses at the corresponding address slots, no exception is going to be generated.  
 Memory coalescing machinery is going to take care of optimizing apparent patterns to the global memory which is one of the benefits of gather loads. In case you access SLM you may hit a bank collision issue.  
-### Sample in a branch
-Now, what about this 10000 pound elephant in the room? Things indeed might get hairy if you are trying to sample a texture in a branch. Particularly, if you are sampling in a pixel shader and use anisotropic/trilinear filtering - those kind of features depend on HW gradients which require that all lanes participating in a 2x2 pixel group have valid arguments. The way it works is that HW packs adjacent pixel groups of 2x2 in the same wave. This has a consequence that 1 pixel triangle is going to spawn 4 pixels and at least 1 wave, the same happens with lone pixels on triangle boundaries. Invisible pixels are called helpers. Some helper pixels are going to have their barycentric coordinates outside the triangle(not sure what happens here, reach out if you do).  
-A good read on the subject matter is [DirectX-Specs 16.8.2 Restrictions on Derivative Calculations](https://microsoft.github.io/DirectX-Specs/d3d/archive/D3D11_3_FunctionalSpec.htm#16.8%20Interaction%20of%20Varying%20Flow%20Control%20With%20Screen%20Derivatives). In short the spec allows such samples if the texture address is a shader input or a statically indexed constant. It makes sense because even if the HW does not know how to handle divergent samples, its compiler can just hoist that sample from the branch and eliminate the issue completely. I expect other APIs to enforce similar behaviour.  
-Worth mentioning that the amount of in-flight memory requests being served is somehow limited by the HW. So if you have a kernel with tons of samples or memory loads, it might stall just trying to issue those requests. Which means that some amount of interleaving of ALU instructions and memory requests is needed to avoid such stalls. But fear not, it's usually taken care of in the compiler, fortunately shader memory models are quite permissive when it comes to reordering.  
-***Update*** [@Themaister](https://twitter.com/Themaister) Wrote a post \[[18]\] about his experiments with texture samples in a divergent control flow on different HW.  
-### When to branch?
-I had one use case in mind. Purely theoretical yet may be interesting.  
-Sometimes you might be hitting the limit of on-flight requests on your HW. In this case it makes sense to reduce the amount of issued samples.
-Imagine this example:
-```c++
-a = mask.Sample(sampler, uv);
-b = diffuse_1.Sample(sampler, uv);
-c = diffuse_2.Sample(sampler, uv);
-pixel = b * a.x + c * (1.0 - a.x);
-```
-Basically we sample a mask and then blend 4 textures. It could be a terrain rendering and we mix grass and ground textures. The mask could look like that:  
-![Figure 10](/assets/noise.png)  
-###### Figure 10. Example of a texture mask containing interleaved spots of constant value
-Notice that the mask consists of big isles of constant values with a little bit of blend on boundaries.  
-If our HW is going to stall on issue limit we are going to pay more than 1 sample latency.  
-Now take a look at this transformed example:
-```c++
-a = mask.Sample(sampler, uv);
-b = diffuse_1.Sample(sampler, uv);
-if (a.x < 1.0) {
-    c = diffuse_2.Sample(sampler, uv);
-} else {
-    c = float4(0.0, 0.0, 0.0, 0.0);
-}
-pixel = b * a.x + c * (1.0 - a.x);
-```
-If the wave already stalls on sampler oversubscription, introducing a data dependency between a and e may not make things worse(the wave has to wait for a to arrive before issuing c). When a.x is 1.0 we are not paying for that redundant sample. In the case of the mask depicted in Figure 10. waves skip the second sample most of the time.  
-This is highly HW/compiler dependent. The compiler may eliminate this branch completely, however, AMD compiler [keeps](http://shader-playground.timjones.io/79af193deadab308250d5bbbb7e2ca75) it.  
-Note that this example is artificially bad, you shouldn't have that much of samples to stall on issue limit and if you do probably something like virtual texture cache could be employed \[[16]\].
+{: .note}
 
+### Sample in a branch
+Things indeed might get hairy if you are trying to sample a texture in a branch. Particularly, if you are sampling in a pixel shader and use anisotropic/trilinear filtering - those kinds of features depend on HW gradients for implicit LOD selection which require that all lanes participating in a 2x2 pixel group have valid arguments. The way it works is that HW packs adjacent pixel groups of 2x2 in the same wave. This has a consequence that 1 pixel triangle is going to spawn 4 pixels and at least 1 wave, the same happens with lone pixels on triangle boundaries. Invisible pixels are called helpers. Some helper pixels are going to have their barycentric coordinates outside the triangle.  
+A good read on the subject matter is [DirectX-Specs 16.8.2 Restrictions on Derivative Calculations](https://microsoft.github.io/DirectX-Specs/d3d/archive/D3D11_3_FunctionalSpec.htm#16.8%20Interaction%20of%20Varying%20Flow%20Control%20With%20Screen%20Derivatives).
+
+In short the spec allows such samples if the texture address is a shader input or a statically indexed constant. It makes sense because even if the HW does not know how to handle divergent samples, its compiler can just hoist that sample from the branch and eliminate the issue completely. I expect other APIs to enforce similar behaviour.  
+
+[@Themaister](https://twitter.com/Themaister) Wrote a post \[[18]\] about his experiments with texture samples in a divergent control flow on different HW. 
+{: .note}
+
+The other issue arises when different lanes try to sample different textures. This is quite usual nowadays with deferred everything and bindless resources.
+On vulkan there's the nonuniformEXT compiler hint that the programmer must put when divergent indexing could take place.
+
+```c++
+// Note nonuniformEXT
+color = texture(sampler2D(diffuseMaps[nonuniformEXT(materialID)], filter), uv);
+```
+On AMD an image descriptor is a scalar value that takes up to 8 registers. Therefore the divergent indexing must be scalarized.  
+On AMD nonuniformEXT is equivalent(more or less) to this loop:
+
+```c++
+while (true) {
+    uint currentIdx = readFirstInvocationARB(materialID);  // Get textureIdx for the lowest _active_ lane
+    if (currentIdx == materialID) { // Lanes with the same index enter the branch
+        color = texture(sampler2D(diffuseMaps[currentIdx], filter), uv); // And sample the texture
+        break; // Disable lanes that finished sampling
+    } // Other _active_ lanes continue looping
+}
+```
+Which is compiled to this assembly:
+
+![](/assets/nonuniform_sample_auto.png)
+
+Note `image_sample v[0:2], v[2:4], s[16:23], s[4:7]` in a loop. In this case `s[16:23]` holds the image descriptor.
+{: .note}
+
+## Avoid branching at all cost?
+No. It's impossible. Just pay attention to divergence and profile. Branches are a huge win when used properly.
+
+## Extra
+It's worth mentioning that there are some techniques to grapple with divergence on HW level, some of them are Dynamic Warp Formation\[[7]\] and predicated execution for small branches.
+
+One of the advanced techniques for dynamic work balancing is called ‘persistent threads’ read more at \[[19]\]. The gist of this method is that you create just enough threads to saturate your GPU with a generic kernel which dynamically grabs job items off a global queue using an atomic counter. With coherent memory like the one you could have with CUDA(Unified memory in NV terminology) it becomes even more interesting because you can stream work from CPU to GPU online.
+
+The amount of in-flight memory requests being served is somehow limited by the HW. So if you have a kernel with tons of samples or memory loads, it might stall just trying to issue those requests. Which means that some amount of interleaving of ALU instructions and memory requests is needed to avoid such stalls. But fear not, it's usually taken care of in the compiler, fortunately shader memory models are quite permissive when it comes to reordering.  
 
 # Links
 
@@ -520,8 +656,22 @@ Note that this example is artificially bad, you shouldn't have that much of samp
 
 [19]: https://www.researchgate.net/publication/334691952_A_Specialized_Concurrent_Queue_for_Scheduling_Irregular_Workloads_on_GPUs
 
+[20][Rendering of Surge][20]
 
-# Comments
-I don't have comments so here's a link to the wrapper tweet
-<blockquote class="twitter-tweet" data-lang="en"><p lang="en" dir="ltr">Wrote a post with basic info about control flow handling on GPU with focus on execution mask approach. Please reach out if you find any mistakes or have suggestions.<a href="https://t.co/ctUFDTkoal">https://t.co/ctUFDTkoal</a></p>&mdash; Anton Schreiner (@kokoronomagnet) <a href="https://twitter.com/kokoronomagnet/status/1141562844871385093?ref_src=twsrc%5Etfw">June 20, 2019</a></blockquote>
-<script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+[20]: https://www.slideshare.net/philiphammer/dissecting-the-rendering-of-the-surge
+
+[21][Wave programming with Vulkan][21]
+
+[21]: http://32ipi028l5q82yhj72224m8j.wpengine.netdna-cdn.com/wp-content/uploads/2017/07/GDC2017-Wave-Programming-D3D12-Vulkan.pdf
+
+[22][Id Tech6][22]
+
+[22]: http://advances.realtimerendering.com/s2016/Siggraph2016_idTech6.pdf
+
+[23][From Source to ISA: A Trip Down the Shader Compiler Pipeline][23]
+
+[23]: https://www.youtube.com/watch?v=_ilAL-1-moA
+
+[24][INTRO TO GPU SCALARIZATION][24]
+
+[24]: https://flashypixels.wordpress.com/2018/11/
