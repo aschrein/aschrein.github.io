@@ -22,6 +22,10 @@ permalink: /about/
 
 
 ## Work experience:
+#### June 2020 - Present (Fully Remote) Unigine
+  * Worked on the engine internals(mostly graphics related).
+  * Visual programming(node based) system for material generation
+
 #### May 2017 - May 2019 (Gdansk/Poland) Intel
   * Runtime libraries. CPU compiler bug fixes. Source-to-Source translation. DirectX 11 capture/replay tool. Graphics compiler bug fixes/new features. Game performance tracking on current/future platforms.
 

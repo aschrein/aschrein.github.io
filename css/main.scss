@@ -16,8 +16,8 @@ $base-line-height: 1.5;
 $spacing-unit:     30px;
 
 $text-color:            #ccdbd5;
-$background-color:      #06070e;
-$block-color:           #181e40;
+$background-color:      #302e2d;
+$block-color:           #2a3130;
 $link-color:            #85c0f0;
 $site-title-color:      #ced1d4;
 $post-title-color:      #ced1d4;    
@@ -467,7 +467,7 @@ $on-laptop:        900px;
 }
 
 article {
-    background-color: #0b0d1a;
+    background-color: #1f2021;
     padding: 10px;
 }
 
@@ -757,12 +757,12 @@ tr:nth-child(odd) td:nth-child(even)
 }
 pre, code {
     color: #f8f8f2;
-    background-color: #1f2330;
-    background: #1f2330;
+    background-color: #272b2c;
+    background: #272b2c;
   }
 .highlighter-rouge
 .highlight {
   color: #f8f8f2;
-  background-color: #1f2330;
-  background: #1f2330;
+  background-color: #272b2c;
+  background: #272b2c;
 }
