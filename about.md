@@ -12,7 +12,7 @@ permalink: /about/
   * [Prototype for node based frame graph editor](https://github.com/aschrein/WebThingy) and [web link](https://aschrein.github.io/thingy/)
 
 #### OSS contributions:
-  * My first and, hopefully, not last contibution was adding a WASM i32x4(SIMD4) target to [ISPC](https://github.com/ispc/ispc/commits?author=aschrein)
+  * Adding a WASM i32x4(SIMD4) target to [ISPC](https://github.com/ispc/ispc/commits?author=aschrein)
 
 #### Shader toys:
   * [Octahedral facet solid angle](https://www.shadertoy.com/view/tlBXDd)
@@ -22,8 +22,8 @@ permalink: /about/
 
 
 ## Work experience:
-#### June 2020 - Present (Fully Remote) Unigine
-  * Worked on the engine internals(mostly graphics related).
+#### June 2020 - November 2020 (100% Remote) Unigine
+  * 3D Rendering R&D.
   * Visual programming(node based) system for material generation
 
 #### May 2017 - May 2019 (Gdansk/Poland) Intel
