@@ -165,7 +165,7 @@ inverse { {a, 0, -1, 0}, {b, 0, 0, -1}, {0, c, -1, 0}, {0, d, 0, -1} }
 
 ![Figure 2](/assets/matrix_0.gif) = ![Figure 2](/assets/matrix_1.gif) 
 
-Now we only need to multiply this matrix with a vector and we're done! I'm too lazy to write all that stuff with latex so follow [this link](https://www.ics.uci.edu/~eppstein/junkyard/circumcenter.html) for complete solution(there are multiple actually):
+Now we only need to multiply this matrix with a vector and we're done! I'm too lazy to write all that stuff with latex and probably did some mistakes, so follow [this link](https://www.ics.uci.edu/~eppstein/junkyard/circumcenter.html) for complete solution(there are multiple actually):
 
 ```c++
 p_0 = (((a_0 - c_0) * (a_0 + c_0) + (a_1 - c_1) * (a_1 + c_1)) / 2 * (b_1 - c_1) 
@@ -178,3 +178,5 @@ p_1 = (((b_0 - c_0) * (b_0 + c_0) + (b_1 - c_1) * (b_1 + c_1)) / 2 * (a_0 - c_0)
 
 where D = (a_0 - c_0) * (b_1 - c_1) - (b_0 - c_0) * (a_1 - c_1)
 ```
+
+And of course, there's a [much better solution](http://math.fau.edu/yiu/AEG2013/AEG2013Chapter09.pdf) using barycentrics.
