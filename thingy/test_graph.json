@@ -1,0 +1,963 @@
+{
+  "last_node_id": 28,
+  "last_link_id": 95,
+  "nodes": [
+    {
+      "id": 14,
+      "type": "gfx/TextureBufferNode",
+      "pos": {
+        "0": 156,
+        "1": 468,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 0,
+        "9": 0
+      },
+      "size": [
+        140,
+        140
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "texture",
+          "type": "uniform_t",
+          "links": []
+        }
+      ],
+      "title": "Texture Buffer",
+      "properties": {
+        "src": "test_texture"
+      }
+    },
+    {
+      "id": 15,
+      "type": "gfx/TextureBufferNode",
+      "pos": {
+        "0": 152,
+        "1": 669,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 0,
+        "9": 0
+      },
+      "size": [
+        140,
+        140
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "texture",
+          "type": "uniform_t",
+          "links": []
+        }
+      ],
+      "title": "Texture Buffer",
+      "properties": {
+        "src": "test_texture_uint"
+      }
+    },
+    {
+      "id": 5,
+      "type": "gfx/PipelineNode",
+      "pos": {
+        "0": 427,
+        "1": 273,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 0,
+        "9": 0
+      },
+      "size": {
+        "0": 140,
+        "1": 26
+      },
+      "flags": {
+        "collapsed": false
+      },
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "out",
+          "type": "pipeline_t",
+          "links": [
+            64
+          ]
+        }
+      ],
+      "title": "Pipeline",
+      "properties": {
+        "vs": "test.vs.glsl",
+        "ps": "test.ps.glsl",
+        "attributes": [
+          {
+            "name": "uv",
+            "type": "vec2"
+          },
+          {
+            "name": "normal",
+            "type": "vec3"
+          },
+          {
+            "name": "position",
+            "type": "vec3"
+          }
+        ],
+        "uniforms": [
+          {
+            "name": "frame_id",
+            "type": "int"
+          },
+          {
+            "name": "albedo",
+            "type": "texture"
+          }
+        ]
+      }
+    },
+    {
+      "id": 24,
+      "type": "gfx/ModelNode",
+      "pos": {
+        "0": 413,
+        "1": 364,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 0,
+        "9": 0
+      },
+      "size": {
+        "0": 140,
+        "1": 26
+      },
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "mesh",
+          "type": "mesh_t",
+          "links": [
+            76
+          ]
+        }
+      ],
+      "title": "Model",
+      "properties": {
+        "fileurl": null
+      }
+    },
+    {
+      "id": 18,
+      "type": "gfx/DrawCallNode",
+      "pos": {
+        "0": 605,
+        "1": 276,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 0,
+        "9": 0
+      },
+      "size": {
+        "0": 140,
+        "1": 86
+      },
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "pipeline",
+          "type": "pipeline_t",
+          "link": 64
+        },
+        {
+          "name": "mesh",
+          "type": "mesh_t",
+          "link": 76
+        },
+        {
+          "name": "albedo",
+          "type": "uniform_t",
+          "link": null
+        },
+        {
+          "name": "frame_id",
+          "type": "uniform_t",
+          "link": 90
+        }
+      ],
+      "outputs": [
+        {
+          "name": "out",
+          "type": "drawcall_t",
+          "links": [
+            65
+          ]
+        }
+      ],
+      "title": "Draw Call",
+      "properties": {
+        "default_uniforms": {}
+      }
+    },
+    {
+      "id": 25,
+      "type": "gfx/FrameCountNode",
+      "pos": {
+        "0": 288,
+        "1": 140,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 0,
+        "9": 0
+      },
+      "size": {
+        "0": 150.5801544189453,
+        "1": 49.670074462890625
+      },
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "0",
+          "type": "uniform_t",
+          "links": [
+            81,
+            90
+          ],
+          "label": 8
+        }
+      ],
+      "title": "Frame count",
+      "properties": {}
+    },
+    {
+      "id": 4,
+      "type": "gfx/PassNode",
+      "pos": {
+        "0": 766,
+        "1": 275,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 0,
+        "9": 0
+      },
+      "size": {
+        "0": 210,
+        "1": 654
+      },
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "DC#0",
+          "type": "drawcall_t",
+          "link": 65
+        },
+        {
+          "name": "DC#1",
+          "type": "drawcall_t",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "rt#0",
+          "type": "uniform_t",
+          "links": null
+        },
+        {
+          "name": "rt#1",
+          "type": "uniform_t",
+          "links": [
+            95
+          ]
+        },
+        {
+          "name": "depth",
+          "type": "uniform_t",
+          "links": null
+        }
+      ],
+      "title": "Pass",
+      "properties": {
+        "viewport": {
+          "width": 2048,
+          "height": 2048
+        },
+        "rts": [
+          {
+            "format": "RGBA32F"
+          },
+          {
+            "format": "RGBA32F"
+          }
+        ],
+        "depth": {
+          "format": "D32"
+        },
+        "dc_cnt": 0
+      }
+    },
+    {
+      "id": 17,
+      "type": "gfx/PassNode",
+      "pos": {
+        "0": 1225,
+        "1": 176,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 0,
+        "9": 0
+      },
+      "size": {
+        "0": 607.6035766601562,
+        "1": 643.6035766601562
+      },
+      "flags": {},
+      "order": 11,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "DC#0",
+          "type": "drawcall_t",
+          "link": 73
+        }
+      ],
+      "outputs": [
+        {
+          "name": "rt#0",
+          "type": "uniform_t",
+          "links": [
+            92,
+            93
+          ]
+        }
+      ],
+      "title": "Pass",
+      "properties": {
+        "viewport": {
+          "width": 1024,
+          "height": 1024
+        },
+        "rts": [
+          {
+            "format": "RGBA32F"
+          }
+        ],
+        "depth": null,
+        "dc_cnt": 0
+      }
+    },
+    {
+      "id": 22,
+      "type": "gfx/DrawCallNode",
+      "pos": {
+        "0": 1049,
+        "1": 158,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 0,
+        "9": 0
+      },
+      "size": {
+        "0": 140,
+        "1": 86
+      },
+      "flags": {},
+      "order": 12,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "pipeline",
+          "type": "pipeline_t",
+          "link": 71
+        },
+        {
+          "name": "mesh",
+          "type": "mesh_t",
+          "link": 70
+        },
+        {
+          "name": "frame_id",
+          "type": "uniform_t",
+          "link": 81
+        },
+        {
+          "name": "iChannel0",
+          "type": "uniform_t",
+          "link": 80
+        }
+      ],
+      "outputs": [
+        {
+          "name": "out",
+          "type": "drawcall_t",
+          "links": [
+            73
+          ]
+        }
+      ],
+      "title": "Draw Call",
+      "properties": {}
+    },
+    {
+      "id": 21,
+      "type": "gfx/PipelineNode",
+      "pos": {
+        "0": 879,
+        "1": 116,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 0,
+        "9": 0
+      },
+      "size": {
+        "0": 140,
+        "1": 26
+      },
+      "flags": {
+        "collapsed": false
+      },
+      "order": 5,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "out",
+          "type": "pipeline_t",
+          "links": [
+            71
+          ]
+        }
+      ],
+      "title": "Pipeline",
+      "properties": {
+        "vs": "ss.vs.glsl",
+        "ps": "ss.ps.glsl",
+        "attributes": [
+          {
+            "name": "uv",
+            "type": "vec2"
+          },
+          {
+            "name": "position",
+            "type": "vec3"
+          }
+        ],
+        "uniforms": [
+          {
+            "name": "iChannel0",
+            "type": "texture"
+          },
+          {
+            "name": "frame_id",
+            "type": "int"
+          }
+        ]
+      }
+    },
+    {
+      "id": 26,
+      "type": "gfx/DrawCallNode",
+      "pos": {
+        "0": 1868,
+        "1": 124,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 0,
+        "9": 0
+      },
+      "size": {
+        "0": 140,
+        "1": 106
+      },
+      "flags": {},
+      "order": 14,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "pipeline",
+          "type": "pipeline_t",
+          "link": 84
+        },
+        {
+          "name": "mesh",
+          "type": "mesh_t",
+          "link": 85
+        },
+        {
+          "name": "iChannel0",
+          "type": "uniform_t",
+          "link": 93
+        },
+        {
+          "name": "frame_id",
+          "type": "uniform_t",
+          "link": null
+        },
+        {
+          "name": "iChannel1",
+          "type": "uniform_t",
+          "link": 95
+        }
+      ],
+      "outputs": [
+        {
+          "name": "out",
+          "type": "drawcall_t",
+          "links": [
+            87
+          ]
+        }
+      ],
+      "title": "Draw Call",
+      "properties": {}
+    },
+    {
+      "id": 28,
+      "type": "gfx/PassNode",
+      "pos": {
+        "0": 2092,
+        "1": 130,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 0,
+        "9": 0
+      },
+      "size": {
+        "0": 210,
+        "1": 246
+      },
+      "flags": {},
+      "order": 15,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "DC#0",
+          "type": "drawcall_t",
+          "link": 87
+        }
+      ],
+      "outputs": [
+        {
+          "name": "rt#0",
+          "type": "uniform_t",
+          "links": [
+            88
+          ]
+        }
+      ],
+      "title": "Pass",
+      "properties": {
+        "viewport": {
+          "width": 512,
+          "height": 512
+        },
+        "rts": [
+          {
+            "format": "RGBA32F"
+          }
+        ],
+        "depth": null,
+        "dc_cnt": 1
+      }
+    },
+    {
+      "id": 27,
+      "type": "gfx/PipelineNode",
+      "pos": {
+        "0": 1688,
+        "1": 58,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 0,
+        "9": 0
+      },
+      "size": {
+        "0": 140,
+        "1": 26
+      },
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "out",
+          "type": "pipeline_t",
+          "links": [
+            84
+          ]
+        }
+      ],
+      "title": "Pipeline",
+      "properties": {
+        "vs": "ss.vs.glsl",
+        "ps": "pp.ps.glsl",
+        "attributes": [
+          {
+            "name": "uv",
+            "type": "vec2"
+          },
+          {
+            "name": "position",
+            "type": "vec3"
+          }
+        ],
+        "uniforms": [
+          {
+            "name": "iChannel0",
+            "type": "texture"
+          },
+          {
+            "name": "iChannel1",
+            "type": "texture"
+          },
+          {
+            "name": "frame_id",
+            "type": "int"
+          }
+        ]
+      }
+    },
+    {
+      "id": 19,
+      "type": "gfx/VertexBufferNode",
+      "pos": {
+        "0": 682,
+        "1": -3,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 0,
+        "9": 0
+      },
+      "size": {
+        "0": 140,
+        "1": 26
+      },
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "mesh",
+          "type": "mesh_t",
+          "links": [
+            70,
+            85
+          ]
+        }
+      ],
+      "title": "SSQuad",
+      "properties": {
+        "src": "triangle_pos"
+      }
+    },
+    {
+      "id": 23,
+      "type": "gfx/FeedbackNode",
+      "pos": {
+        "0": 1272,
+        "1": -81,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 0,
+        "9": 0
+      },
+      "size": {
+        "0": 142,
+        "1": 48
+      },
+      "flags": {},
+      "order": 13,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "in",
+          "type": "uniform_t",
+          "link": 92
+        }
+      ],
+      "outputs": [
+        {
+          "name": "out",
+          "type": "uniform_t",
+          "links": [
+            80
+          ]
+        }
+      ],
+      "title": "Feedback",
+      "properties": {}
+    },
+    {
+      "id": 8,
+      "type": "gfx/BackBufferNode",
+      "pos": {
+        "0": 1862,
+        "1": 412,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 0,
+        "9": 0
+      },
+      "size": {
+        "0": 402.9099426269531,
+        "1": 402.9099426269531
+      },
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "in",
+          "type": "uniform_t",
+          "link": 88
+        }
+      ],
+      "outputs": [],
+      "title": "Back Buffer",
+      "properties": {}
+    }
+  ],
+  "links": [
+    [
+      64,
+      5,
+      0,
+      18,
+      0,
+      "pipeline_t"
+    ],
+    [
+      65,
+      18,
+      0,
+      4,
+      0,
+      "drawcall_t"
+    ],
+    [
+      70,
+      19,
+      0,
+      22,
+      1,
+      "mesh_t"
+    ],
+    [
+      71,
+      21,
+      0,
+      22,
+      0,
+      "pipeline_t"
+    ],
+    [
+      73,
+      22,
+      0,
+      17,
+      0,
+      "drawcall_t"
+    ],
+    [
+      76,
+      24,
+      0,
+      18,
+      1,
+      "mesh_t"
+    ],
+    [
+      80,
+      23,
+      0,
+      22,
+      3,
+      "uniform_t"
+    ],
+    [
+      81,
+      25,
+      0,
+      22,
+      2,
+      "uniform_t"
+    ],
+    [
+      84,
+      27,
+      0,
+      26,
+      0,
+      "pipeline_t"
+    ],
+    [
+      85,
+      19,
+      0,
+      26,
+      1,
+      "mesh_t"
+    ],
+    [
+      87,
+      26,
+      0,
+      28,
+      0,
+      "drawcall_t"
+    ],
+    [
+      88,
+      28,
+      0,
+      8,
+      0,
+      "uniform_t"
+    ],
+    [
+      90,
+      25,
+      0,
+      18,
+      3,
+      "uniform_t"
+    ],
+    [
+      92,
+      17,
+      0,
+      23,
+      0,
+      "uniform_t"
+    ],
+    [
+      93,
+      17,
+      0,
+      26,
+      2,
+      "uniform_t"
+    ],
+    [
+      95,
+      4,
+      1,
+      26,
+      4,
+      "uniform_t"
+    ]
+  ],
+  "groups": [],
+  "config": {
+    "srcs": {
+      "test.vs.glsl": {
+        "code": "#version 300 es\nlayout (location=0) in vec3 position;\nlayout (location=1) in vec2 uv;\nlayout (location=2) in vec3 normal;\nout vec2 f_uv;\nout vec3 f_normal;\nuniform int frame_id;\n\nvoid main() {\n    f_uv = uv;\n    float time = float(frame_id) * 0.1;\n    mat3 rot_init = mat3(\n        1.0, 0.0, 0.0,\n        0.0, 0.0, 1.0,\n        0.0, 1.0, 0.0\n        );\n    mat3 rot = mat3(\n        cos(time), sin(time), 0.0,\n        -sin(time), cos(time), 0.0,\n        0.0, 0.0, 1.0\n        );\n    mat3 scale = mat3(3.0);\n    f_normal = rot_init * rot * normal;\n    gl_Position = vec4(rot_init * rot * scale * position, 1.0);\n    \n}"
+      },
+      "test.ps.glsl": {
+        "code": "#version 300 es\nprecision highp float;\nprecision highp int;\nprecision highp usampler2D;\nin vec2 f_uv;\nin vec3 f_normal;\n// uniform usampler2D albedo;\nuniform sampler2D albedo;\nlayout (location=0) out vec4 fragColor;\nlayout (location=1) out vec4 fragColor1;\nvoid main() {\n    vec4  s = texture(albedo, f_uv);\n    fragColor = vec4(f_uv, 0.0, 1.0);\n    fragColor1 = vec4(\n        vec3(\n            abs(dot(vec3(0.0, 1.0, -1.0), f_normal))\n        ), 1.0);\n    //gl_FragDepth = 1.0;\n}"
+      },
+      "triangle_pos": {
+        "code": "{\n    \"attributes\": {\n        \"position\": {\n            \"data\": [\n                -1.0, -1.0, 0.0,\n                1.0, -1.0, 0.0,\n                1.0, 1.0, 0.0,\n                -1.0, 1.0, 0.0\n                ],\n                \"type\": \"vec3\"\n        },\n        \"color\": {\n            \"data\": [\n                1.0, 1.0, 0.0,\n                0.0, 1.0, 0.0,\n                1.0, 1.0, 0.0,\n                1.0, 1.0, 0.0\n                ],\n                \"type\": \"vec3\"\n        },\n        \"uv\": {\n            \"data\": [\n                0.0, 1.0,\n                1.0, 1.0,\n                1.0, 0.0,\n                0.0, 0.0\n                ],\n                \"type\": \"vec2\"\n        }\n    },\n    \"indices\": {\n            \"data\": [\n            0, 1, 2, 0, 2, 3\n            ],\n            \"type\": \"uint16\"\n    }\n}\n"
+      },
+      "test_texture": {
+        "code": "{\n    \"data\": [\n            1.0, 0.0, 0.0, 1.0,\n            0.0, 1.0, 0.0, 1.0,\n            1.0, 1.0, 1.0, 1.0,\n            0.0, 0.0, 0.0, 1.0\n            ],\n    \"format\": \"RGBA32F\",\n    \"width\": 2,\n    \"height\":2\n}\n"
+      },
+      "test_texture_uint": {
+        "code": "{\n    \"data\": [\n            1, 0, 0, 0,\n            0, 1, 0, 0,\n            1, 1, 0, 0,\n            0, 0, 0, 0\n            ],\n    \"format\": \"RGBA32UI\",\n    \"width\": 2,\n    \"height\":2\n}\n"
+      },
+      "ss.vs.glsl": {
+        "code": "#version 300 es\nlayout (location=0) in vec3 position;\nlayout (location=1) in vec2 uv;\nout vec2 f_uv;\nvoid main() {\n    f_uv = uv;\n    gl_Position = vec4(position, 1.0);\n    \n}"
+      },
+      "ss.ps.glsl": {
+        "code": "#version 300 es\nprecision highp float;\nprecision highp int;\nprecision highp usampler2D;\nin vec2 f_uv;\nuniform sampler2D iChannel0;\nuniform int frame_id;\nuniform vec2 _resolution;\nlayout(location = 0) out vec4 SV_TARGET0;\nvec2 iResolution;\nfloat iTime;\nfloat laplace(vec2 coord) {\n  float stepx = 1.0;\n  float stepy = 1.0;\n  float l00 =\n      texture(iChannel0, (coord + vec2(-stepx, -stepy)) / iResolution.xy).x;\n  float l01 =\n      texture(iChannel0, (coord + vec2(stepx, -stepy)) / iResolution.xy).x;\n  float l10 =\n      texture(iChannel0, (coord + vec2(stepx, stepy)) / iResolution.xy).x;\n  float l11 =\n      texture(iChannel0, (coord + vec2(-stepx, stepy)) / iResolution.xy).x;\n  return (l00 + l01 + l10 + l11) * 0.25 -\n         texture(iChannel0, coord / iResolution.xy).x;\n}\n\nfloat rand(vec2 co) {\n  return fract(sin(dot(co.xy, vec2(192.9898, 78.233))) * 43758.5453);\n}\n\nvoid mainImage(out vec4 fragColor, in vec2 fragCoord) {\n  float offset = 0.0;\n  float rand_step = 5.0;\n  vec2 cell_center = 2.0 * rand_step * floor(fragCoord / rand_step / 2.0) +\n                     vec2(rand_step, rand_step);\n//   if (iTime < 10.0)\n  {\n    if (length(fragCoord.xy - iResolution.xy * 0.5) < 8.0) {\n      offset = 1.0 * sin(2.0 * iTime);\n    }\n    if (length(fragCoord.xy - iResolution.xy * vec2(0.2, 0.5)) < 4.0) {\n      offset = 0.5 * sin(4.0 * iTime);\n    }\n    if (length(fragCoord.xy - iResolution.xy * vec2(0.8, 0.1)) < 4.0) {\n      offset = 0.45 * sin(1.0 * iTime);\n    }\n  }\n//   else\n  if (rand(cell_center / iResolution.xy +\n                  rand(vec2(iTime * 777.0, -iTime))) > 0.996) {\n    float l = length(fragCoord - cell_center);\n    if (l < rand_step)\n      offset = -0.7 * pow((rand_step - l) / rand_step, 2.0);\n  }\n  vec2 cur_val = texture(iChannel0, fragCoord / iResolution.xy).xy;\n  float lap = laplace(fragCoord);\n  cur_val.y += lap;\n  float clamp_val = 100.0;\n  fragColor =\n      vec4(clamp(cur_val.x + cur_val.y * 0.2 + offset, -clamp_val, clamp_val),\n           clamp(cur_val.y * 0.99, -clamp_val, clamp_val), 0.0, 1.0);\n}\nvoid main() {\n  iTime = float(frame_id) * 0.1;\n  iResolution = _resolution;\n  vec4 fragColor;\n  vec2 fragCoord = vec2(gl_FragCoord.x, iResolution.y - gl_FragCoord.y);\n  mainImage(fragColor, fragCoord);\n  SV_TARGET0 = fragColor;//vec4(gl_FragCoord.xy/iResolution.xx,0.0,1.0);\n}\n"
+      },
+      "pp.ps.glsl": {
+        "code": "#version 300 es\nprecision highp float;\nprecision highp int;\nprecision highp usampler2D;\nin vec2 f_uv;\nuniform sampler2D iChannel0;\nuniform sampler2D iChannel1;\nuniform int frame_id;\nuniform vec2 _resolution;\nlayout(location = 0) out vec4 SV_TARGET0;\nvec2 iResolution;\nfloat iTime;\nvec2 grad(vec2 coord)\n{\n    float stepx = 1.0;\n    float stepy = 1.0;\n    vec2 l00 = texture(iChannel0, (coord + vec2(-stepx, -stepy)) / iResolution.xy).x * vec2(-stepx, -stepy);\n    vec2 l01 = texture(iChannel0, (coord + vec2(stepx, -stepy)) / iResolution.xy).x * vec2(stepx, -stepy);\n    vec2 l10 = texture(iChannel0, (coord + vec2(stepx, stepy)) / iResolution.xy).x * vec2(stepx, stepy);\n    vec2 l11 = texture(iChannel0, (coord + vec2(-stepx, stepy)) / iResolution.xy).x * vec2(-stepx, stepy);\n    return (l00 + l01 + l10 + l11) * 0.5;\n}\n\nfloat phong(vec3 light_pos, vec3 camera_pos, vec3 ray_dir, vec3 normal) {\n    vec3 l = normalize(light_pos - camera_pos);\n    vec3 refl = reflect(ray_dir, normal);\n    float phong_spec = pow(clamp(dot(refl, l), 0.0, 1.0), 256.0);\n    return phong_spec;\n}\n\nvoid mainImage( out vec4 fragColor, in vec2 fragCoord )\n{\n    float r = texture(iChannel0, fragCoord/iResolution.xy).x;\n    r = clamp(r, -10.0, 10.0) / 20.0 + 0.5;\n    vec2 g = grad(fragCoord);\n    vec3 normal = normalize(cross(vec3(1.0, 0.0, g.x), vec3(0.0, 1.0, g.y)));\n    vec3 color = texture(iChannel1, (fragCoord + 30.0 * normal.xy)/iResolution.xy).xyz;\n    vec3 wpos = vec3(fragCoord/iResolution.xy, 0.0);\n    vec3 cam_pos = vec3(0.5, 0.5, 10.0);\n    vec3 ray_dir = normalize(wpos - cam_pos);\n    \n    \n    vec3 phong_spec = 2.0 * vec3(0.9, 0.7, 0.1) * phong(vec3(0.1, 0.8, 1.0), wpos, ray_dir, normal);\n    phong_spec += vec3(0.1, 0.55, 0.9) * phong(vec3(0.8, 0.1, 1.0), wpos, ray_dir, normal);\n    \n    //if (fragCoord.x < iResolution.x * 0.33333)\n    {\n        fragColor = vec4(color + phong_spec, 1.0);\n    }\n    // else if (fragCoord.x < iResolution.x * 0.66666)\n    // {\n    //     fragColor = vec4(normal * 0.5 + 0.5, 1.0);\n    // }\n    // else\n    // {\n    //     fragColor = vec4(r, r, r, 1.0);\n    // }\n}\nvoid main() {\n  iTime = float(frame_id) * 0.1;\n  iResolution = _resolution;\n  vec4 fragColor;\n  vec2 fragCoord = vec2(gl_FragCoord.x, gl_FragCoord.y);\n  mainImage(fragColor, fragCoord);\n  SV_TARGET0 = fragColor;//vec4(gl_FragCoord.xy/iResolution.xx,0.0,1.0);\n}\n"
+      }
+    }
+  },
+  "version": 0.4
+}
