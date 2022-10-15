@@ -180,3 +180,11 @@ where D = (a_0 - c_0) * (b_1 - c_1) - (b_0 - c_0) * (a_1 - c_1)
 ```
 
 And of course, there's a [much better solution](http://math.fau.edu/yiu/AEG2013/AEG2013Chapter09.pdf) using barycentrics and the [Law of Sines](https://en.wikipedia.org/wiki/Law_of_sines).
+
+<script src="https://utteranc.es/client.js"
+        repo="aschrein/aschrein.github.io"
+        issue-term="pathname"
+        theme="github-dark"
+        crossorigin="anonymous"
+        async>
+</script>

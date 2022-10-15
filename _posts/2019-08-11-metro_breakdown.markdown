@@ -407,3 +407,11 @@ mul r4.xyz, r2.xyzx, r3.zzzz
 
 <blockquote class="reddit-card" data-card-created="1565684298"><a href="https://www.reddit.com/r/GraphicsProgramming/comments/cpd3u0/metro_exodus_frame_breakdown/">Metro Exodus Frame Breakdown</a> from <a href="http://www.reddit.com/r/GraphicsProgramming">r/GraphicsProgramming</a></blockquote>
 <script async src="//embed.redditmedia.com/widgets/platform.js" charset="UTF-8"></script>
+
+<script src="https://utteranc.es/client.js"
+        repo="aschrein/aschrein.github.io"
+        issue-term="pathname"
+        theme="github-dark"
+        crossorigin="anonymous"
+        async>
+</script>

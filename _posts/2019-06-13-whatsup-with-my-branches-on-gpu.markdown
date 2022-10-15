@@ -678,7 +678,7 @@ The amount of in-flight memory requests being served is somehow limited by the H
 
 
 <script src="https://utteranc.es/client.js"
-        repo="https://github.com/aschrein/aschrein.github.io"
+        repo="aschrein/aschrein.github.io"
         issue-term="pathname"
         theme="github-dark"
         crossorigin="anonymous"

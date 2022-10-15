@@ -155,3 +155,11 @@ Nowadays domain specific languages are everywhere. If you work in graphics you'r
  
 And the list only expands as the system you're working on becomes more and more complex. The languages are there not to increase the complexity though but to lower it.
 They are there to encode semantics and get rid of repetition. Naturally, their goal is to increase the entropy of the code. Somehow high entropy encoding is easier to manage simply because the amount of errors is somewhat proportional to the volume of code and anything that decreases the volume decreases the possibility of an error. Low code volume is also easier to change. That's mostly a speculation, of course some stream of symbols like 'egasoggoGEge0g20830t-=' might encode a lot of useful logic but it's non readable and a more readable version is preferred even though it is of lower entropy. 
+
+<script src="https://utteranc.es/client.js"
+        repo="aschrein/aschrein.github.io"
+        issue-term="pathname"
+        theme="github-dark"
+        crossorigin="anonymous"
+        async>
+</script>
