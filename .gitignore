@@ -5,3 +5,4 @@ draft.md
 .scratch/
 *.ckpt
 debug.log
+settings.json
