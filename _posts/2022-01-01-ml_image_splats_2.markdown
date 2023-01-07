@@ -45,7 +45,7 @@ color[x][y] = sum(i=(0, N), shape_color[i] * exp(-shape_w[i]) * shape_f[i][x][y]
 
 Where shape_f is the splat function of the ith shape and shape_w is the weight. The weight should go through the exponent to enable the smoothmin kind of effect where you add stuff a * exp(w_a) + b * exp(w_b) and exponent just moves something linearly in digit space. Like if you add numbers in binary, exponentiation is right shift so it moves the bits of one term across the bits of the other term. This has the effect of making the sum depend more on one of the numbers. After the two numbers have been added, the result is normalized to ensure that the smaller number has a lesser impact on the final result.. 0b0000'1000 + 0b0000'0001 = 0b000'10001, and then normalization makes sure the bits of the smaller term are moved right past the significance.
 
-I'm not quite satisfied with the results and will think about making something else for now.
+I'm not quite satisfied with the results and will think about improving something else.
 
 ![png](/assets/ml_image_splats_2/example_input_2.png){: width="256" }
 
@@ -56,7 +56,7 @@ I'm not quite satisfied with the results and will think about making something e
 ![png](/assets/ml_image_splats_2/example_input_3.png){: width="256" }
 
 <video height="256" autoplay loop muted>
-<source src="/assets/ml_image_splats_2/experiment_video_2.mp4" type="video/mp4">
+<source src="/assets/ml_image_splats_2/experiment_video_3.mp4" type="video/mp4">
 </video>
 
 
