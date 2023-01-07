@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  "[Short post] Thoughts on parsing"
+title:  "Thoughts on parsing"
 date:   2020-09-1 08:19:16 +0000
 categories: jekyll update
 ---

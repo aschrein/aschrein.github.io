@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  "[Short post] Circumcenter of a triangle"
+title:  "Circumcenter of a triangle"
 date:   2021-02-1 08:19:16 +0000
 categories: jekyll update
 ---
@@ -19,6 +19,8 @@ categories: jekyll update
 
 It's useful to sometimes redo high school basic stuff step by step. Also I wanted to try out the mathjax latex embedding.
  
+This article also features zero production quality diagrams made in paint which I really like because it's fast.
+
 ## Definition
 
 A circumcenter of a triangle (A, B, C) is a point P that is equally distant to 3 of its vertices.
