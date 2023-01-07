@@ -31,6 +31,7 @@ Differentiable shapes approximate an image.
 * this unordered seed list will be replaced
 {:toc}
 
+# Post
 
 ## Intro
 
@@ -131,15 +132,15 @@ Which is not useful at all but still cool.
 
 This works because the resulting function is differentiable: it's a sum of functions and each function is a differentiable function. The step forward in accordance with the article \[[1]\] is adding another array of f32[num_shapes, isize, isize] or a filter, that acts as a depth buffer really, more or less. It has 1.0 when the shape is visible at the given pixel and 0.0 when it's not. And we can make the network learn that too. Another step would be adding some sort of texture to the shape so that it looks more like a paint brush.
 
-## References
+# Links
 
 [1][geometric-art-with-pytorch][1]
 
-[1] : https://towardsdatascience.com/geometric-art-with-pytorch-c6d92bf3e320
+[1]: https://towardsdatascience.com/geometric-art-with-pytorch-c6d92bf3e320/
 
 [2][geometric-art-with-pytorch/youtube][2]
 
-[2] : https://www.youtube.com/watch?v=OSA5fZZwEW4
+[2]: https://www.youtube.com/watch?v=OSA5fZZwEW4/
 
 <script src="https://utteranc.es/client.js"
         repo="aschrein/aschrein.github.io"
