@@ -91,6 +91,15 @@ I like the sketchy look but not quite satisfied with the overall quality and wil
 
 [2]: https://www.youtube.com/watch?v=OSA5fZZwEW4/
 
+[3][https://www.berkayantmen.com/rank.html][3]
+
+[3]: https://www.berkayantmen.com/rank.html/
+
+[4][https://arxiv.org/pdf/2006.16038.pdf][4]
+
+[4]: https://arxiv.org/pdf/2006.16038.pdf/
+
+
 <script src="https://utteranc.es/client.js"
         repo="aschrein/aschrein.github.io"
         issue-term="pathname"

@@ -5,6 +5,8 @@ permalink: /about/
 ---
 ## Noteworthy links:
 
+[mastodon](https://mastodon.gamedev.place/@aschrein)
+
 [Twitter](https://twitter.com/antonschrein)
 
 [LinkedIn](https://www.linkedin.com/in/anton-schreiner-b7a375200/)
