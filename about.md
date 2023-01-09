@@ -5,11 +5,19 @@ permalink: /about/
 ---
 ## Noteworthy links:
 
+[Buy me a Coffee](https://www.buymeacoffee.com/antonschrein)
+
 [mastodon](https://mastodon.gamedev.place/@aschrein)
 
 [Twitter](https://twitter.com/antonschrein)
 
 [LinkedIn](https://www.linkedin.com/in/anton-schreiner-b7a375200/)
+
+[instagram](https://www.instagram.com/serendimbor/)
+
+[tiktok](https://www.tiktok.com/@antonschrein)
+
+[youtube](https://www.youtube.com/@mono_serendip)
 
 #### Educational projects:
   * [Minimal Vulkan ICD(software driver)](https://github.com/aschrein/vulkenstein)
