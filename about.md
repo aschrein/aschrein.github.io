@@ -5,11 +5,10 @@ permalink: /about/
 ---
 ## Noteworthy links:
 
-[Buy me a Coffee](https://www.buymeacoffee.com/antonschrein)
-
+[Twitter](https://twitter.com/antonschrein)
 [mastodon](https://mastodon.gamedev.place/@aschrein)
 
-[Twitter](https://twitter.com/antonschrein)
+[shadertoy](https://www.shadertoy.com/user/aschrein)
 
 [LinkedIn](https://www.linkedin.com/in/anton-schreiner-b7a375200/)
 
@@ -19,9 +18,10 @@ permalink: /about/
 
 [youtube](https://www.youtube.com/@mono_serendip)
 
+
 #### Educational projects:
-  * [Minimal Vulkan ICD(software driver)](https://github.com/aschrein/vulkenstein)
-  * [Fantasy GPU emulator](https://github.com/aschrein/guppy) and [web link](https://aschrein.github.io/guppy/)
+  * [Minimal Vulkan GPU simulator+shader compiler for x86](https://github.com/aschrein/vulkenstein)
+  * [Fantasy GPU simulator](https://github.com/aschrein/guppy) and [web link](https://aschrein.github.io/guppy/)
   * [An attempt at writing a graphics engine](https://github.com/aschrein/Vulki)
   * [Prototype for node based frame graph/shader editor](https://github.com/aschrein/WebThingy) and [web link](https://aschrein.github.io/thingy/)
 
@@ -37,7 +37,7 @@ permalink: /about/
 
 ## Work experience:
 #### February 2021 - Now (100% Remote) [AMD](https://www.amd.com/en)
-  * Hybrid Ray Tracing R&D. Developing effects and samples and supporting developer technology engineers.
+  * Ray Tracing R&D. Developing effects and samples and supporting developer technology engineers.
   * Worked on GPUOpen code/samples:
     * [Hybrid Stochastic Reflections Sample](https://gpuopen.com/learn/hybrid-reflections/)
     * [Reflections Denoiser](https://github.com/GPUOpen-Effects/FidelityFX-Denoiser/tree/d7dfecbabe7b9523b14e7b067216e06b86e8d189/ffx-reflection-dnsr)

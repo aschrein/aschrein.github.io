@@ -47,9 +47,9 @@ Another short post. This time I extended the fourier shape with the angle fallof
 
 [4]: https://arxiv.org/pdf/2006.16038.pdf/
 
-[4][Photo used for the input][4]
+[5][Photo used for the input][4]
 
-[4]: https://www.pexels.com/photo/curly-hair-woman-wearing-headscarf-14296202/
+[5]: https://www.pexels.com/photo/curly-hair-woman-wearing-headscarf-14296202/
 
 
 

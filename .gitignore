@@ -6,3 +6,4 @@ draft.md
 *.ckpt
 debug.log
 settings.json
+*.pyc
