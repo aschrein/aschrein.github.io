@@ -6,23 +6,20 @@ permalink: /about/
 ## Noteworthy links:
 
 [Twitter](https://twitter.com/antonschrein)
+
 [mastodon](https://mastodon.gamedev.place/@aschrein)
 
 [shadertoy](https://www.shadertoy.com/user/aschrein)
 
 [LinkedIn](https://www.linkedin.com/in/anton-schreiner-b7a375200/)
 
-[instagram](https://www.instagram.com/serendimbor/)
-
-[tiktok](https://www.tiktok.com/@antonschrein)
-
-[youtube](https://www.youtube.com/@mono_serendip)
-
 
 #### Educational projects:
-  * [Minimal Vulkan GPU simulator+shader compiler for x86](https://github.com/aschrein/vulkenstein)
-  * [Fantasy GPU simulator](https://github.com/aschrein/guppy) and [web link](https://aschrein.github.io/guppy/)
-  * [An attempt at writing a graphics engine](https://github.com/aschrein/Vulki)
+  * [Toy Software GPU simulator + Vulkan API(+JIT shader compiler for x86)](https://github.com/aschrein/vulkenstein)
+  * [Toy GPU simulator in Rust](https://github.com/aschrein/guppy) and [web link](https://aschrein.github.io/guppy/)
+  * [Toy Graphics Framework](https://github.com/aschrein/Vulki)
+  * [Toy Graphics Framework 2](https://github.com/aschrein/VulkII)
+  * [Toy Graphics Framework 3](https://github.com/aschrein/dgfx)
   * [Prototype for node based frame graph/shader editor](https://github.com/aschrein/WebThingy) and [web link](https://aschrein.github.io/thingy/)
 
 #### OSS contributions:
