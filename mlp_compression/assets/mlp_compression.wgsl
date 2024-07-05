@@ -35,25 +35,25 @@ fn YCbCr_to_RGB(color : vec3f)->vec3f {
     return (color - vec3f(0.0, 0.5, 0.5)) * rgb_matrix; 
 }
 
-const BATCH_SIZE : u32 = 64 * 64;
+const BATCH_SIZE : u32 = 128 * 64;
 const NUM_LAYERS                : u32 = u32(7);
-const MAX_NUM_NODES_PER_LAYER   : u32 = u32(32);
+const MAX_NUM_NODES_PER_LAYER   : u32 = u32(36);
 const NUM_NODES_PER_LAYER =
     array<u32, NUM_LAYERS>(
-    32,
-      32,
+    36,
         16,
-          4,
+            16,
+                8,
+            16,
         16,
-      32,
     3);
 const NO_RESIDUAL = u32(0xffffffff);
 const RESIDUAL_CONNECTIONS = array<u32, NUM_LAYERS>(
     NO_RESIDUAL,
-      NO_RESIDUAL,
-        0,
-          NO_RESIDUAL,
-          NO_RESIDUAL,
+        NO_RESIDUAL,
+            NO_RESIDUAL,
+                0,
+            1,
         2,
     NO_RESIDUAL);
 const NUM_ACTIVATIONS_PER_NETWORK : u32 = NUM_LAYERS * MAX_NUM_NODES_PER_LAYER;
@@ -352,7 +352,7 @@ fn Inference(layer_idx : u32,
     
         // activations[activation_idx] = acc;
 }
-const NUM_GRAD_QUANTIZATION_LEVELS : u32 = u32(1 << 11);
+const NUM_GRAD_QUANTIZATION_LEVELS : u32 = u32(1 << 13);
 fn quantize_grad(grad : f32)->i32 {
     let num_levels : u32 = NUM_GRAD_QUANTIZATION_LEVELS;
     return i32(round(grad * f32(num_levels)));
@@ -403,8 +403,11 @@ fn Backprop(
 fn get_luma(color : vec3f)->f32 {
     return 0.299 * color.r + 0.715 * color.g + 0.0722 * color.b;
 }
-fn getsign(x : f32)->f32 {
-    if (x > 0.0) {
+fn getsigneps(x : f32)->f32 {
+    let eps : f32 = 1.0e-2;
+    if (abs(x) < eps) {
+        return 0.0;
+    } else if (x > 0.0) {
         return 1.0;
     } else {
         return -1.0;
@@ -421,7 +424,7 @@ fn InitializeActivation(
     // activations[2] = sin((uv.x + uv.y) * 3.14159);
     // activations[3] = cos((uv.x - uv.y) * 3.14159);
     // Frequency encoding of uv
-    let num_frequncies : u32 = 8u; // 3 * 2 * 2 + 2 = 12 + 2 = 14
+    let num_frequncies : u32 = 9u; // 3 * 2 * 2 + 2 = 12 + 2 = 14
     let num_channels : u32 = 2u;
     for (var i : u32 = 0u; i < num_frequncies; i = i + 1u) {
         for (var channel_idx : u32 = 0u; channel_idx < num_channels; channel_idx = channel_idx + 1u) {
@@ -486,9 +489,9 @@ fn Main(input : CSInput) {
     // let src_luma        = final_activation_r;
     // let luma_duff       = (src_luma - target_luma);
     let signal_diff     = vec3f(final_activation_r, final_activation_g, final_activation_b) - target_signal;
-    grads[final_activation_idx + 0] = 4.0 * (signal_diff[0] + 0.0 * getsign(signal_diff[0])) ;
-    grads[final_activation_idx + 1] = 4.0 * (signal_diff[1] + 0.0 * getsign(signal_diff[1])) ;
-    grads[final_activation_idx + 2] = 4.0 * (signal_diff[2] + 0.0 * getsign(signal_diff[2])) ;
+    grads[final_activation_idx + 0] = 1.0 * (signal_diff[0] + 0.001 * getsigneps(signal_diff[0])) ;
+    grads[final_activation_idx + 1] = 1.0 * (signal_diff[1] + 0.001 * getsigneps(signal_diff[1])) ;
+    grads[final_activation_idx + 2] = 1.0 * (signal_diff[2] + 0.001 * getsigneps(signal_diff[2])) ;
     // Backpropagation
     for (var i : u32 = NUM_LAYERS - 1; i >= start_layer_idx; i = i - 1u) {
         for (var j : u32 = 0u; j < NUM_NODES_PER_LAYER[i]; j = j + 1u) {
@@ -585,10 +588,10 @@ fn Backward(input : CSInput) {
     let adam_weights_offset     : u32 = layer_params_offset + layer_constants.adam_weights_offset;
     let adam_biases_offset      : u32 = layer_params_offset + layer_constants.adam_biases_offset;
 
-    let lr      : f32 = 0.1 / sqrt(f32(BATCH_SIZE));//GetLearningRate();
+    let lr      : f32 = 0.2 / sqrt(f32(BATCH_SIZE));//GetLearningRate();
     let t       : f32 = f32(1.0) + f32(constants.frame_idx);
     let rate    : f32 = f32(1.0) / t;
-    let beta    : f32 = 0.97;
+    let beta    : f32 = 0.96;
     // Update weights
     for (var i : u32 = 0u; i < layer_constants.num_prev_nodes; i = i + 1u) {
         let weight_idx : u32 = layer_params_offset

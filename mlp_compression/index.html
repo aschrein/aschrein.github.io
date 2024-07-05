@@ -338,7 +338,7 @@ fn PSMain(
                 compute_pass.dispatchWorkgroups(dispatch_resolution.x, dispatch_resolution.y, dispatch_resolution.z);
             }
             compute_pass.setPipeline(compute_pso);
-            compute_pass.dispatchWorkgroups(64, 1, dispatch_resolution.z);
+            compute_pass.dispatchWorkgroups(128, 1, dispatch_resolution.z);
             compute_pass.setPipeline(backprop_pso);
             compute_pass.dispatchWorkgroups(dispatch_resolution.x, dispatch_resolution.y, dispatch_resolution.z);
             compute_pass.setPipeline(inference_pso);
