@@ -16,25 +16,56 @@ struct Constants {
 
 @group(0) @binding(5) var<uniform> constants : Constants;
 
-const NUM_LAYERS                : u32 = u32(6);
+const Kr = 0.2126;
+const Kg = 0.7152;
+const Kb = 1.0 - Kr - Kg;
+
+fn RGB_to_YCbCr(color : vec3f)->vec3f {
+    let ycbr_matrix = mat3x3<f32>(
+        Kr, Kg, Kb,
+        -0.5 * Kr / (1.0 - Kb), -0.5 * Kg / (1.0 - Kb), 0.5,
+        0.5, -0.5 * Kg / (1.0 - Kr), -0.5 * Kb / (1.0 - Kr));
+    return  color * ycbr_matrix + vec3f(0.0, 0.5, 0.5);
+}
+fn YCbCr_to_RGB(color : vec3f)->vec3f {
+    let rgb_matrix = mat3x3<f32>(
+        1.0, 0.0, 2.0 - 2.0 * Kr,
+        1.0, -Kb * (2.0 - 2.0 * Kb) / Kg, -Kr * (2.0 - 2.0 * Kr) / Kg,
+        1.0, 2.0 - 2.0 * Kb, 0.0);
+    return (color - vec3f(0.0, 0.5, 0.5)) * rgb_matrix; 
+}
+
+const BATCH_SIZE : u32 = 64 * 64;
+const NUM_LAYERS                : u32 = u32(7);
 const MAX_NUM_NODES_PER_LAYER   : u32 = u32(32);
 const NUM_NODES_PER_LAYER =
     array<u32, NUM_LAYERS>(
     32,
-    32,
-    16,
-    32,
-    16,
+      32,
+        16,
+          4,
+        16,
+      32,
     3);
 const NO_RESIDUAL = u32(0xffffffff);
 const RESIDUAL_CONNECTIONS = array<u32, NUM_LAYERS>(
     NO_RESIDUAL,
-    NO_RESIDUAL,
-    NO_RESIDUAL,
-    u32(0),
-    u32(1),
-    2u);
+      NO_RESIDUAL,
+        0,
+          NO_RESIDUAL,
+          NO_RESIDUAL,
+        2,
+    NO_RESIDUAL);
 const NUM_ACTIVATIONS_PER_NETWORK : u32 = NUM_LAYERS * MAX_NUM_NODES_PER_LAYER;
+// const NUM_ACTIVATIONS_PER_NETWORK : u32 = 
+//     NUM_NODES_PER_LAYER[0] +
+//     NUM_NODES_PER_LAYER[1] +
+//     NUM_NODES_PER_LAYER[2] +
+//     NUM_NODES_PER_LAYER[3] +
+//     NUM_NODES_PER_LAYER[4] +
+//     NUM_NODES_PER_LAYER[5] +
+//     NUM_NODES_PER_LAYER[6] +
+//     NUM_NODES_PER_LAYER[7];
 
 fn get_total_num_nodes()->u32 {
     var total_num_nodes : u32 = 0u;
@@ -139,11 +170,17 @@ fn get_layer_params_offset(layer_idx : u32)->u32 {
     var offset : u32 = 0u;
     for (var i : u32 = 1u; i < layer_idx; i = i + 1u) {
         // let layer_constants = get_layer_constants(i);
-        let num_nodes = MAX_NUM_NODES_PER_LAYER;
-        let num_weights = MAX_NUM_NODES_PER_LAYER * MAX_NUM_NODES_PER_LAYER;
-        let num_biases = MAX_NUM_NODES_PER_LAYER;
+        // let num_nodes       = layer_constants.num_nodes;
+        // let num_weights     = layer_constants.num_weights;
+        // let num_biases      = layer_constants.num_biases;
+
+        // flat rate
+        let num_nodes   = MAX_NUM_NODES_PER_LAYER;
+        let num_weights = num_nodes * num_nodes;
+        let num_biases  = num_nodes;
+
         let num_adam_params = 4 * (num_weights + num_biases);
-        offset = offset + num_weights + num_biases + num_adam_params;
+        offset              = offset + num_weights + num_biases + num_adam_params;
         // offset                = offset + layer_constants.num_weights +
                 //  layer_constants.num_biases + layer_constants.num_adam_params;
     }
@@ -232,8 +269,8 @@ fn Initialize(input : CSInput) {
                                             + layer_constants.adam_weights_offset
                                             + 2 * node_idx * layer_constants.num_prev_nodes
                                             + 2 * i;
-        g_rw_params[adam_weights_mean_offset + 0] = 0.0;
-        g_rw_params[adam_weights_mean_offset + 1] = 0.0;
+        g_rw_params[adam_weights_mean_offset + 0] = (random_uniform_unit_float(&rnd_state) * 2.0 - 1.0) * normalization_const / 1.0;
+        g_rw_params[adam_weights_mean_offset + 1] = (random_uniform_unit_float(&rnd_state) * 2.0 - 1.0) * normalization_const / 1.0;
     }
     // for biases
     let adam_biases_mean_offset : u32 = layer_params_offset
@@ -373,7 +410,6 @@ fn getsign(x : f32)->f32 {
         return -1.0;
     }
 }
-const BATCH_SIZE : u32 = (4u * 4u) * 64u;
 
 fn InitializeActivation(
     uv : vec2<f32>,
@@ -396,8 +432,8 @@ fn InitializeActivation(
             let power_bias : u32 = 0;
             let sin_val : f32        = sin(uv[channel_idx] * pow(2.0, f32(power_bias + i)) * 3.14159);
             let cos_val : f32        = cos(uv[channel_idx] * pow(2.0, f32(power_bias + i)) * 3.14159);
-            activations[activation_idx + 0] = sin_val / pow(1.0, f32(i));
-            activations[activation_idx + 1] = cos_val / pow(1.0, f32(i));;
+            activations[activation_idx + 0] = sin_val * pow(1.0, f32(i));
+            activations[activation_idx + 1] = cos_val * pow(1.0, f32(i));;
         }
     }
 
@@ -445,14 +481,14 @@ fn Main(input : CSInput) {
     for (var i : u32 = 0u; i < NUM_ACTIVATIONS_PER_NETWORK; i = i + 1u) {
         grads[i] = 0.0;
     }
-    let target_signal = color.xyz;
-    let target_luma = get_luma(target_signal);
-    let src_luma    = get_luma(vec3f(final_activation_r, final_activation_g, final_activation_b));
-    let luma_duff   = (src_luma - target_luma);
-    let signal_diff = vec3f(final_activation_r, final_activation_g, final_activation_b) - target_signal;
-    grads[final_activation_idx + 0] = 4.0 * (signal_diff[0] + 0.001 * getsign(signal_diff[0])) + 0.0 * luma_duff * 0.299;
-    grads[final_activation_idx + 1] = 4.0 * (signal_diff[1] + 0.001 * getsign(signal_diff[1])) + 0.0 * luma_duff * 0.715;
-    grads[final_activation_idx + 2] = 4.0 * (signal_diff[2] + 0.001 * getsign(signal_diff[2])) + 0.0 * luma_duff * 0.0722;
+    let target_signal   = (color.xyz);
+    // let target_luma     = target_signal.x;
+    // let src_luma        = final_activation_r;
+    // let luma_duff       = (src_luma - target_luma);
+    let signal_diff     = vec3f(final_activation_r, final_activation_g, final_activation_b) - target_signal;
+    grads[final_activation_idx + 0] = 4.0 * (signal_diff[0] + 0.0 * getsign(signal_diff[0])) ;
+    grads[final_activation_idx + 1] = 4.0 * (signal_diff[1] + 0.0 * getsign(signal_diff[1])) ;
+    grads[final_activation_idx + 2] = 4.0 * (signal_diff[2] + 0.0 * getsign(signal_diff[2])) ;
     // Backpropagation
     for (var i : u32 = NUM_LAYERS - 1; i >= start_layer_idx; i = i - 1u) {
         for (var j : u32 = 0u; j < NUM_NODES_PER_LAYER[i]; j = j + 1u) {
@@ -499,11 +535,16 @@ fn InferencePass(input : CSInput) {
     let final_activation_r : f32     = activations[final_activation_idx + 0];
     let final_activation_g : f32     = activations[final_activation_idx + 1];
     let final_activation_b : f32     = activations[final_activation_idx + 2];
+    let ycbcr = vec3f(final_activation_r, final_activation_g, final_activation_b);
+    let rgb = (ycbcr);
+
+    // let target_rgb : vec4f = textureSampleLevel(g_texture, g_sampler, uv, 0);
+    // let test = YCbCr_to_RGB(RGB_to_YCbCr(target_rgb.xyz));
 
     g_color[pos.x + pos.y * width] = vec4f(
-          final_activation_r
-        , final_activation_g
-        , final_activation_b
+        rgb.r
+        , rgb.g
+        , rgb.b
         , 1.0);
 }
 
@@ -544,8 +585,10 @@ fn Backward(input : CSInput) {
     let adam_weights_offset     : u32 = layer_params_offset + layer_constants.adam_weights_offset;
     let adam_biases_offset      : u32 = layer_params_offset + layer_constants.adam_biases_offset;
 
-    let lr : f32 = GetLearningRate();
-
+    let lr      : f32 = 0.1 / sqrt(f32(BATCH_SIZE));//GetLearningRate();
+    let t       : f32 = f32(1.0) + f32(constants.frame_idx);
+    let rate    : f32 = f32(1.0) / t;
+    let beta    : f32 = 0.97;
     // Update weights
     for (var i : u32 = 0u; i < layer_constants.num_prev_nodes; i = i + 1u) {
         let weight_idx : u32 = layer_params_offset
@@ -559,28 +602,39 @@ fn Backward(input : CSInput) {
         let adam_weight_idx : u32 = adam_weights_offset
                                     + 2 * node_idx * layer_constants.num_prev_nodes
                                     + 2 * i;
-        let adam_mean       : f32 = g_rw_params[adam_weight_idx + 0];
-        let adam_variance   : f32 = g_rw_params[adam_weight_idx + 1];
-        let rnd = f32(lowbias32(i + lowbias32(node_idx + lowbias32(constants.frame_idx / 1))) & 0xffff) / f32(0xffff);
-        var adam_mean_new   : f32 = mix(adam_mean, grad, rnd * 0.5); // TODO: use momentum
-        if (abs(adam_mean_new) < 1.0e-5) {
-            adam_mean_new = grad;
-        }
-        g_rw_params[weight_idx] = g_rw_params[weight_idx] - grad * lr;
-        g_rw_params[adam_weights_offset + 2 * weight_idx + 0] = adam_mean_new;
+        let z         : f32 = g_rw_params[adam_weight_idx + 0];
+        let x         : f32 = g_rw_params[adam_weight_idx + 1];
+        let z_1       : f32 = z - grad * lr;
+        let x_1       : f32 = mix(x, z, rate);
+        let y         : f32 = mix(z_1, x_1, beta);
+        g_rw_params[weight_idx] = y; // Y
+
+        g_rw_params[adam_weight_idx + 0] = z_1;
+        g_rw_params[adam_weight_idx + 1] = x_1;
+
+        // let rnd = f32(lowbias32(i + lowbias32(node_idx + lowbias32(constants.frame_idx / 1))) & 0xffff) / f32(0xffff);
+        // var adam_mean_new   : f32 = mix(adam_mean, grad, rate); // TODO: use momentum
+       
+        // if (abs(adam_mean_new) < 1.0e-5) {
+        //     adam_mean_new = grad;
+        // } g_rw_params[weight_idx]
+
 
     }
     // Update biases
-    let bias_idx               : u32 = layer_params_offset + layer_constants.biases_offset + node_idx;
-    let bias_grad_buf_idx      : u32 = grad_offset + layer_constants.num_weights + node_idx;
-    let bias_grad              : f32 = dequantize_grad(atomicExchange(&g_rw_gradients[bias_grad_buf_idx], 0));
-    let adam_bias_idx          : u32 = adam_biases_offset + 2 * node_idx;
-    let adam_bias_mean         : f32 = g_rw_params[adam_bias_idx + 0];
-    let adam_bias_variance     : f32 = g_rw_params[adam_bias_idx + 1];
-    var adam_bias_mean_new     : f32 = mix(adam_bias_mean, bias_grad, 0.02); // TODO: use momentum
-    if (abs(adam_bias_mean_new) < 1.0e-5) {
-        adam_bias_mean_new = bias_grad;
+    {
+        let bias_idx                : u32 = layer_params_offset + layer_constants.biases_offset + node_idx;
+        let bias_grad_buf_idx       : u32 = grad_offset + layer_constants.num_weights + node_idx;
+        let bias_grad               : f32 = dequantize_grad(atomicExchange(&g_rw_gradients[bias_grad_buf_idx], 0));
+        let adam_bias_idx           : u32 = adam_biases_offset + 2 * node_idx;
+        let z                       : f32 = g_rw_params[adam_bias_idx + 0];
+        let x                       : f32 = g_rw_params[adam_bias_idx + 1];
+        let z_1                     : f32 = z - bias_grad * lr;
+        let x_1                     : f32 = mix(x, z, rate);
+        let y                       : f32 = mix(z_1, x_1, beta);
+
+        g_rw_params[bias_idx]          = y;
+        g_rw_params[adam_bias_idx + 0] = z_1;
+        g_rw_params[adam_bias_idx + 1] = x_1;
     }
-    g_rw_params[bias_idx] = g_rw_params[bias_idx] - adam_bias_mean_new * lr * 0.008;
-    g_rw_params[adam_bias_idx + 0] = adam_bias_mean_new;
 }

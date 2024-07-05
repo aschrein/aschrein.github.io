@@ -318,7 +318,7 @@ fn PSMain(
         });
         var frame_idx = 0;
         let render = function () {
-            
+            // if (frame_idx > 200) return;
             // Update the uniform buffer
             const uniform_array = new Float32Array([frame_idx]);
             device.queue.writeBuffer(uniform_buffer, 0, uniform_array.buffer);
@@ -338,7 +338,7 @@ fn PSMain(
                 compute_pass.dispatchWorkgroups(dispatch_resolution.x, dispatch_resolution.y, dispatch_resolution.z);
             }
             compute_pass.setPipeline(compute_pso);
-            compute_pass.dispatchWorkgroups(8, 8, dispatch_resolution.z);
+            compute_pass.dispatchWorkgroups(64, 1, dispatch_resolution.z);
             compute_pass.setPipeline(backprop_pso);
             compute_pass.dispatchWorkgroups(dispatch_resolution.x, dispatch_resolution.y, dispatch_resolution.z);
             compute_pass.setPipeline(inference_pso);
@@ -362,7 +362,7 @@ fn PSMain(
 
             device.queue.submit([encoder.finish()]);
             requestAnimationFrame(render);
-            // console.log("frame_idx: ", frame_idx);
+            console.log("frame_idx: ", frame_idx);
             frame_idx++;
         };
         // add event listener for the canvas
