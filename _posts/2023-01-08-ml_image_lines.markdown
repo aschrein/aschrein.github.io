@@ -1,7 +1,7 @@
 ---
 layout: post
 title:  "Using Differentiable Strokes For Image Approximation"
-date:   2022-01-08 00:00:00 +0000
+date:   2023-01-08 00:00:00 +0000
 categories: jekyll update
 ---
 

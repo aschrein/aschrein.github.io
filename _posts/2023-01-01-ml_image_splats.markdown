@@ -1,7 +1,7 @@
 ---
 layout: post
 title:  "Experimenting with PyTorch for Image Approximation using Differentiable Shapes"
-date:   2022-01-01 00:00:00 +0000
+date:   2023-01-01 00:00:00 +0000
 categories: jekyll update
 ---
 

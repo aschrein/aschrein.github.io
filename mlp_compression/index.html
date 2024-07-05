@@ -19,7 +19,12 @@
         if (!navigator.gpu) {
             throw new Error("WebGPU not supported on this browser.");
         }
-        const adapter = await navigator.gpu.requestAdapter();
+        const adapter_options = {
+            powerPreference: "low-power",
+        };
+        const adapter = await navigator.gpu.requestAdapter(adapter_options);
+        console.log(adapter);
+        console.log("adapter fallback: ", adapter.isFallbackAdapter);
         const device = await adapter.requestDevice();
         const context = canvas.getContext("webgpu");
         const canvasFormat = navigator.gpu.getPreferredCanvasFormat();
@@ -362,7 +367,7 @@ fn PSMain(
 
             device.queue.submit([encoder.finish()]);
             requestAnimationFrame(render);
-            console.log("frame_idx: ", frame_idx);
+            // console.log("frame_idx: ", frame_idx);
             frame_idx++;
         };
         // add event listener for the canvas

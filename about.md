@@ -11,13 +11,14 @@ permalink: /about/
     * Implemented a subset of vulkan API as a virtual device, enough to take some SPIRV pixel/vertex shaders, PSO and rasterize a basic imgui sample and put on screen. Tiny compiler layer takes spirv and use llvm to make a wavefront, linearize CFG and compile to x86 for native execution on cpu.
   * [GPU simulator in Rust](https://github.com/aschrein/guppy) and [web link](https://aschrein.github.io/guppy/)
     * A toy GPU performance simulator with an imaginary ISA that can spit out basic wave traces based on a config.
-  * [3D Graphics Framework](https://github.com/aschrein/Vulki)
-  * [3D Graphics Framework 2](https://github.com/aschrein/VulkII)
-  * [3D Graphics Framework 3](https://github.com/aschrein/dgfx)
+  * [3D Prototyping Graphics Framework](https://github.com/aschrein/Vulki)
+  * [3D Prototyping Graphics Framework 2](https://github.com/aschrein/VulkII)
+  * [3D Prototyping Graphics Framework 3](https://github.com/aschrein/dgfx)
   * [Prototype for node based frame graph/shader editor](https://github.com/aschrein/WebThingy) and [web link](https://aschrein.github.io/thingy/)
 
 #### OSS contributions:
   * Adding a WASM i32x4(SIMD4) target to [ISPC](https://github.com/ispc/ispc/commits?author=aschrein)
+  * GPUOpen effects
 
 #### Shader toys:
   * [Octahedral facet solid angle](https://www.shadertoy.com/view/tlBXDd)
@@ -27,8 +28,10 @@ permalink: /about/
 
 ## Work experience:
 #### February 2021 - Now (100% Remote) [AMD](https://www.amd.com/en)
-  * Briefly worked on some UE5 thingies. Mostly c++/d3d12/hlsl land. Some internal tooling for testing/capture/replay/prototyping/perf analysis.
-  * Worked on GPUOpen code/samples:
+  * Leading an effort on modeling+inference+data generation for spatio temporal ray tracing monte carlo denoising middleware.
+    * i8/f8|wmma|Parametric kernel prediction networks|CNN|Unets|Pytorch|Recurrent
+  * C++|d3d12|hlsl| Some internal tooling for testing/capture/replay/rapid prototyping/perf analysis.
+  * Leading development of GPUOpen code/samples(some of it shipped in a number of AAA games):
     * [Hybrid Stochastic Reflections Sample](https://gpuopen.com/learn/hybrid-reflections/)
     * [Reflections Denoiser](https://github.com/GPUOpen-Effects/FidelityFX-Denoiser/tree/d7dfecbabe7b9523b14e7b067216e06b86e8d189/ffx-reflection-dnsr)
     * Brixelizer
@@ -38,7 +41,7 @@ permalink: /about/
 
 #### June 2020 - November 2020 (100% Remote) [Unigine](https://unigine.com/)
   * Engine development.
-  * [Visual programming(node based) system for material generation](https://unigine.com/blog/2020/09/30/feature-preview-shader-graph-editor/)
+  * Prototyped/Envisioned [Visual programming(node based) system for material generation](https://unigine.com/blog/2020/09/30/feature-preview-shader-graph-editor/)
 
 #### May 2017 - May 2019 (Gdansk/Poland) [Intel](https://www.intel.com/)
   * Worked briefly on CPU compilers(icc/Big endian) and runtime libraries(Embedded).
