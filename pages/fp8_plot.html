@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Floating Point Quantization</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.27.1/plotly.min.js"></script>
+    <style>
+        body {
+            font-family: sans-serif;
+            margin: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        #plot {
+            width: 800px;
+            height: 600px;
+            margin: 0 auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            font-family: monospace;
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f5f5f5;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        .bits {
+            font-family: monospace;
+            letter-spacing: 1px;
+        }
+
+        .value {
+            font-family: monospace;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div id="plot"></div>
+        <div id="table"></div>
+    </div>
+
+    <script>
+        function fp8_to_float(bits, exponent_bits, mantissa_bits) {
+            const sign = (bits & 0x80) ? -1 : 1;
+            const exp_mask = (1 << exponent_bits) - 1;
+            const biased_exp = (bits >> mantissa_bits) & exp_mask;
+            const mantissa = bits & ((1 << mantissa_bits) - 1);
+
+            const bias = (1 << (exponent_bits - 1)) - 1;
+
+            if (biased_exp === 0) {
+                if (mantissa === 0) return 0;
+                return sign * Math.pow(2, -bias + 1) * (mantissa / (1 << mantissa_bits));
+            }
+
+            const unbiased_exp = biased_exp - bias;
+            return sign * Math.pow(2, unbiased_exp) * (1 + mantissa / (1 << mantissa_bits));
+        }
+
+        function formatBits(n, exponent_bits, mantissa_bits) {
+            let bits = n.toString(2).padStart(8, '0');
+            const sign = bits[0];
+            const exp = bits.slice(1, 1 + exponent_bits);
+            const mantissa = bits.slice(1 + exponent_bits);
+            return `${sign} ${exp} ${mantissa}`;
+        }
+
+        function formatValue(value) {
+            if (value === 0) return "0";
+
+            // For very small numbers, use a fixed number of decimal places
+            if (Math.abs(value) < 0.001) {
+                return value.toFixed(10).replace(/\.?0+$/, '');
+            }
+
+            // For very large numbers, use regular decimal notation
+            if (Math.abs(value) >= 1000) {
+                return value.toString();
+            }
+
+            // For numbers between 0.001 and 1000, use a reasonable number of decimal places
+            return value.toPrecision(7).replace(/\.?0+$/, '').replace(/\.?0+e/, 'e');
+        }
+
+        function generateTable(exponent_bits, mantissa_bits) {
+            const values = [];
+
+            // Generate only positive values (sign bit = 0)
+            for (let i = 0; i < 128; i++) {
+                const value = fp8_to_float(i, exponent_bits, mantissa_bits);
+                if (value >= 0) {
+                    values.push({
+                        bits: i,
+                        value: value
+                    });
+                }
+            }
+
+            values.sort((a, b) => a.value - b.value);
+
+            let html = `
+        <table>
+          <tr>
+            <th>Bits (S EXP MANT)</th>
+            <th>Value</th>
+          </tr>
+      `;
+
+            values.forEach(({ bits, value }) => {
+                html += `
+          <tr>
+            <td class="bits">${formatBits(bits, exponent_bits, mantissa_bits)}</td>
+            <td class="value">${formatValue(value)}</td>
+          </tr>
+        `;
+            });
+
+            html += '</table>';
+            document.getElementById('table').innerHTML = html;
+        }
+
+        function generatePlotData(exponent_bits, mantissa_bits) {
+            const values = new Array(256);
+
+            for (let i = 0; i < 256; i++) {
+                values[i] = fp8_to_float(i, exponent_bits, mantissa_bits);
+            }
+
+            values.sort((a, b) => a - b);
+
+            const x_quant = [];
+            const y_quant = [];
+
+            for (let i = 0; i < values.length - 1; i++) {
+                const current = values[i];
+                const next = values[i + 1];
+                const midpoint = (current + next) / 2;
+
+                if (i > 0) {
+                    const prevMidpoint = (values[i - 1] + current) / 2;
+                    x_quant.push(prevMidpoint);
+                    y_quant.push(current);
+                } else {
+                    x_quant.push(current);
+                    y_quant.push(current);
+                }
+
+                x_quant.push(midpoint);
+                y_quant.push(current);
+                x_quant.push(midpoint);
+                y_quant.push(next);
+            }
+
+            const last = values[values.length - 1];
+            x_quant.push(last);
+            y_quant.push(last);
+
+            const max_value = Math.max(...values.map(Math.abs));
+
+            const x_ref = [-max_value, max_value];
+            const y_ref = [-max_value, max_value];
+
+            return { x_quant, y_quant, x_ref, y_ref, max_value };
+        }
+
+        const data = generatePlotData(4, 3);
+        const plotRange = [-data.max_value * 1.1, data.max_value * 1.1];
+
+        const plot = document.getElementById('plot');
+
+        Plotly.newPlot(plot, [
+            {
+                x: data.x_quant,
+                y: data.y_quant,
+                mode: 'lines',
+                name: 'FP8 Quantized',
+                line: {
+                    color: '#8884d8',
+                    width: 2
+                },
+                hovertemplate: 'Real: %{x:.3f}<br>FP8: %{y:.3f}<extra></extra>'
+            },
+            {
+                x: data.x_ref,
+                y: data.y_ref,
+                mode: 'lines',
+                name: 'y=x Reference',
+                line: {
+                    color: '#82ca9d',
+                    width: 2,
+                    dash: 'dash'
+                },
+                hovertemplate: 'x = y: %{x:.3f}<extra></extra>'
+            }
+        ],
+            {
+                title: `Floating Point Quantization (E${4}M${3}) with Denormals`,
+                xaxis: {
+                    title: 'Real Value',
+                    range: plotRange,
+                    gridcolor: '#eee',
+                    zerolinecolor: '#999',
+                    fixedrange: false
+                },
+                yaxis: {
+                    title: 'Quantized Value',
+                    range: plotRange,
+                    gridcolor: '#eee',
+                    zerolinecolor: '#999',
+                    fixedrange: false
+                },
+                dragmode: 'pan',
+                hovermode: 'closest',
+                showlegend: true,
+                plot_bgcolor: '#fff',
+                paper_bgcolor: '#fff',
+                margin: { t: 60, r: 40, b: 60, l: 60 },
+                uirevision: 'true'
+            },
+            {
+                responsive: true,
+                scrollZoom: true,
+                displayModeBar: true,
+                modeBarButtonsToRemove: ['lasso2d', 'select2d'],
+                displaylogo: false,
+                doubleClick: 'reset'
+            });
+
+        plot.on('plotly_relayout', function (eventdata) {
+            if (eventdata['xaxis.range[0]'] || eventdata['yaxis.range[0]']) {
+                return false;
+            }
+        });
+
+        generateTable(4, 3);
+    </script>
+</body>
+
+</html>
