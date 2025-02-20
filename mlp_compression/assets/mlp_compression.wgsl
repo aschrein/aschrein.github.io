@@ -326,9 +326,11 @@ fn hard_gelu(x : f32)->f32 {
     if (x < (-3.0 / 2.0)) { return 0.0; }
     if (x > 3.0 / 2.0) { return x; }
     return (x / 3.0) * (x + (3.0 / 2.0));
+    // return x * (1.0 / 2.0 + x / 2.0 / sqrt(1.0 + x * x));
 }
 
 fn hard_gelu_derivative(x : f32)->f32 {
+    // return 1.0 / 2.0 / sqrt(1.0 + x * x) + (1.0 / 2.0 + x / 2.0 / sqrt(1.0 + x * x));
     if (x < (-3.0 / 2.0)) { return 0.0; }
     if (x > 3.0 / 2.0) { return 1.0; }
     return 1.0 / 6.0 * (4.0 * x + 3.0);
@@ -360,7 +362,7 @@ fn Inference(layer_idx : u32,
     let bias_idx : u32 = biases_offset + node_idx;
     let bias : f32     = g_rw_params[bias_idx];
     
-    activations[activation_idx] = hard_gelu(acc + bias);
+    activations[activation_idx] = leaky_relu(acc + bias);
     
         // activations[activation_idx] = acc;
 }
@@ -388,7 +390,7 @@ fn Backprop(
     let activation_idx      = get_layer_activations_offset(layer_idx) + node_idx;
     let activation          = activations[activation_idx];
     let grad                = grads[activation_idx];
-    var delta               = grad * hard_gelu_derivative(activation);
+    var delta               = grad * leaky_relu_derivative(activation);
 
     for (var i : u32 = 0u; i < layer_constants.num_prev_nodes; i = i + 1u) {
         let weight_idx  = weights_offset
@@ -501,9 +503,9 @@ fn Main(input : CSInput) {
     // let src_luma        = final_activation_r;
     // let luma_duff       = (src_luma - target_luma);
     let signal_diff     = vec3f(final_activation_r, final_activation_g, final_activation_b) - target_signal;
-    grads[final_activation_idx + 0] = 1.0 * (signal_diff[0] + 0.001 * getsigneps(signal_diff[0])) ;
-    grads[final_activation_idx + 1] = 1.0 * (signal_diff[1] + 0.001 * getsigneps(signal_diff[1])) ;
-    grads[final_activation_idx + 2] = 1.0 * (signal_diff[2] + 0.001 * getsigneps(signal_diff[2])) ;
+    grads[final_activation_idx + 0] = 2.0 * (( signal_diff[0]) + 0.001 *  getsigneps(signal_diff[0])) ;
+    grads[final_activation_idx + 1] = 2.0 * (( signal_diff[1]) + 0.001 *  getsigneps(signal_diff[1])) ;
+    grads[final_activation_idx + 2] = 2.0 * (( signal_diff[2]) + 0.001 *  getsigneps(signal_diff[2])) ;
     // Backpropagation
     for (var i : u32 = NUM_LAYERS - 1; i >= start_layer_idx; i = i - 1u) {
         for (var j : u32 = 0u; j < NUM_NODES_PER_LAYER[i]; j = j + 1u) {
