@@ -323,14 +323,14 @@ fn leaky_relu_derivative(x : f32)->f32 {
 }
 
 fn hard_gelu(x : f32)->f32 {
-    if (x < (-3.0 / 2.0)) return 0.0;
-    if (x > 3.0 / 2.0) return x;
+    if (x < (-3.0 / 2.0)) { return 0.0; }
+    if (x > 3.0 / 2.0) { return x; }
     return (x / 3.0) * (x + (3.0 / 2.0));
 }
 
 fn hard_gelu_derivative(x : f32)->f32 {
-    if (x < (-3.0 / 2.0)) return 0.0;
-    if (x > 3.0 / 2.0) return 1.0;
+    if (x < (-3.0 / 2.0)) { return 0.0; }
+    if (x > 3.0 / 2.0) { return 1.0; }
     return 1.0 / 6.0 * (4.0 * x + 3.0);
 }
 
