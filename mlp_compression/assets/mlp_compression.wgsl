@@ -322,6 +322,18 @@ fn leaky_relu_derivative(x : f32)->f32 {
     }
 }
 
+fn hard_gelu(x : f32)->f32 {
+    if (x < (-3.0 / 2.0)) return 0.0;
+    if (x > 3.0 / 2.0) return x;
+    return (x / 3.0) * (x + (3.0 / 2.0));
+}
+
+fn hard_gelu_derivative(x : f32)->f32 {
+    if (x < (-3.0 / 2.0)) return 0.0;
+    if (x > 3.0 / 2.0) return 1.0;
+    return 1.0 / 6.0 * (4.0 * x + 3.0);
+}
+
 fn Inference(layer_idx : u32,
              node_idx  : u32,
             activations : ptr<function, array<f32, NUM_ACTIVATIONS_PER_NETWORK>>) {
@@ -348,7 +360,7 @@ fn Inference(layer_idx : u32,
     let bias_idx : u32 = biases_offset + node_idx;
     let bias : f32     = g_rw_params[bias_idx];
     
-    activations[activation_idx] = leaky_relu(acc + bias);
+    activations[activation_idx] = hard_gelu(acc + bias);
     
         // activations[activation_idx] = acc;
 }
@@ -376,7 +388,7 @@ fn Backprop(
     let activation_idx      = get_layer_activations_offset(layer_idx) + node_idx;
     let activation          = activations[activation_idx];
     let grad                = grads[activation_idx];
-    var delta               = grad * leaky_relu_derivative(activation);
+    var delta               = grad * hard_gelu_derivative(activation);
 
     for (var i : u32 = 0u; i < layer_constants.num_prev_nodes; i = i + 1u) {
         let weight_idx  = weights_offset

@@ -3,6 +3,7 @@ _site
 .jekyll-metadata
 draft.md
 .scratch/
+.tmp/
 *.ckpt
 debug.log
 settings.json
