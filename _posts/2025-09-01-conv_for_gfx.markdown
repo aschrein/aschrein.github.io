@@ -2,7 +2,7 @@
 layout: post
 title:  "Thinking about convolutions for graphics"
 
-date:   2023-01-08 00:00:00 +0000
+date:   2025-08-22 00:00:00 +0000
 categories: jekyll update
 ---
 
@@ -16,11 +16,13 @@ categories: jekyll update
 </script>
 <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
 
-## Table of content
+## Table of contents
 * this unordered seed list will be replaced
 {:toc}
 
 # Introduction
+
+This is a short post about convolutions in the context of graphics processing. While we haven't switched to vision transformers for everything, CNNs are still the dominant architecture for many tasks and attention is not all we need.
 
 When introducing convolutions it does often start with something like this:
 
@@ -37,14 +39,20 @@ or
 Which is fair but from a practical point of view it is not very helpful.
 
 We need to add another dimension which is the feature dimension.
-In graphics we usually work with 3D tensors, where the three dimensions correspond to width, height, and feature channels (e.g., RGB).
+In graphics, we usually work with 3D tensors, where the three dimensions correspond to width, height, and feature channels (e.g., RGB).
 The default layout is referred to as HWC linear layout, which means that we're linearizing from the last dimension to the first e.g. it will be stored like [R G B R G B ..] in memory for RGB images. When working with ML frameworks the layout is usually BCHW which is batch_size, channels, height, width and in memory it might be stored as an array of 2D 'grayscale' single feature slices.
 
 # Inference oriented point of view
 
-For inference though as we care about the memory hieararchy and hw specific matrix multiplication instructions we want the features to be close to one another and multiple of the of the number of channels supported by the hardware(4, 8, 16 ..) which also makes thinking about the operations a bit easier, from my point of view. As all we do is just load some vector of values per pixel, multiply it by a matrix and then store that back - pretty straightforward compared to traditional shader workloads. So my point is that this pixel-feature-vector centered point of view makes it easier to think about common operations as we don't really care that much about the width and heights or batch size during inference. Also this helps when working with hw matrix multiplication instructions.
+For inference though as we care about the memory hierarchy and hw specific matrix multiplication instructions we want the features to be close to one another and multiple of the number of channels supported by the hardware (4, 8, 16 ..) which also makes thinking about the operations a bit easier, from my point of view.
+
+Everything is a feature vector.
+
+As all we do is just load some vector of values per pixel, multiply it by a matrix and then store that back - pretty straightforward compared to traditional shader workloads. So my point is that this pixel-feature-vector centered point of view makes it easier to think about common operations as we don't really care that much about the width and heights or batch size during inference. Also this helps when working with hw matrix multiplication instructions.
 
 ![](/assets/conv_for_gfx/conv_diagram.png)
+
+# Pseudocode implementation
 
 In a naive implementation that would look something like that:
 
@@ -53,7 +61,7 @@ In a naive implementation that would look something like that:
 // T - quantized datatype that we use for storage and operations
 void Conv1x1(i32x2 tid) {
   
-  vector<T, N> input_features = load<T, N(input_texture, tid);
+  vector<T, N> input_features = load<T, N>(input_texture, tid);
   matrix<T, M, N> weights     = load_weights<M, N>(conv1x1_weights);
   vector<f32, M> biases       = load<f32, M>(conv1x1_biases);
 
@@ -68,7 +76,7 @@ void Conv1x1(i32x2 tid) {
 
 ```
 
-And 3x3 convolutions would look similar, with just extra concatenation:
+And 3x3 convolutions would look similar, with just extra concatenation that acts as conditioning of our linear operator on spatially distributed information:
 
 ```c++
 
@@ -80,9 +88,9 @@ void Conv3x3(i32x2 tid) {
 
   // Load the 3x3 neighborhood of features
   // Or use any other im2col approach
-  for (y in -1 .. 1) {
-    for (x in -1 .. 1) {
-      input_features[(y + 1) * 3 + (x + 1)] = load<T, N(input_texture, tid + /* offset */ i32x2(x, y));
+  for (int y = -1; y <= 1; ++y) {
+    for (int x = -1; x <= 1; ++x) {
+      input_features[(y + 1) * 3 + (x + 1)] = load<T, N>(input_texture, tid + /* offset */ i32x2(x, y));
     }
   }
 
@@ -100,7 +108,7 @@ void Conv3x3(i32x2 tid) {
 
 ```
 
-And that's pretty much it. You have your operator implemented. Ofc there's other stuff like padding and stride, dilation but that can be an extension.
+And that's pretty much it. You have your operator implemented. Of course there's other stuff like padding and stride, dilation but that can be an extension.
 
 ```python
 # PyTorch convolution
@@ -108,15 +116,21 @@ conv3x3 = nn.Conv2d(in_channels=N, out_channels=M, kernel_size=3, stride=1, padd
 
 ```
 
+# Matrices are graphs
+
+Another useful perspective is to think of matrices as graphs, where each element is a node and the connections between them represents the strength of the relationship. I recommend reading [Matrices and graphs][3] and [Matrices and probability graphs][4].
+
+![](/assets/conv_for_gfx/mat_graph.png)
+
 # Low rank operations
 
 It's often useful as well to have lower rank operations, now that we're working in the matrix multiplication space.
-For example, if we have a NxN matrix, the number of flops is O(N^3). But if we split that matrix into 2 smaller matrices that map half of the input features to another half of the output features, we'll get (N / 2)^3 * 2 which is 1/4 the original cost. Not hard to notice this has some nice properties, but the downside of of this is that during training the disjoint feature groups don't talk to one another, luckly we can solve that by adding another MxN matrix multiply after that to combine the features.
+For example, if we have a NxN matrix, the number of flops is O(N^3). But if we split that matrix into 2 smaller matrices that map half of the input features to another half of the output features, we'll get (N / 2)^3 * 2 which is 1/4 the original cost. Not hard to notice this has some nice properties, but the downside of this is that during training the disjoint feature groups don't talk to one another; luckily, we can solve that by adding another MxN matrix multiply after that to combine the features.
 
 ![](/assets/conv_for_gfx/conv_group_diagram.png)
 
 
-Bonus my original sketch:
+# Bonus: my original sketch:
 
 ![](/assets/conv_for_gfx/sketch.png)
 
@@ -130,6 +144,14 @@ Bonus my original sketch:
 [2][Using the Matrix Cores of AMD RDNA 4 architecture GPUs][2]
 
 [2]: https://gpuopen.com/learn/using_matrix_core_amd_rdna4/
+
+[3][Matrices and graphs][3]
+
+[3]: https://thepalindrome.org/p/matrices-and-graphs
+
+[4][Matrices and probability graphs][4]
+
+[4]: https://www.math3ma.com/blog/matrices-probability-graphs
 
 <script src="https://utteranc.es/client.js"
         repo="aschrein/aschrein.github.io"
