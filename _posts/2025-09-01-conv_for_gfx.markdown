@@ -125,7 +125,7 @@ Another useful perspective is to think of matrices as graphs, where each element
 # Low rank operations
 
 It's often useful as well to have lower rank operations, now that we're working in the matrix multiplication space.
-For example, if we have a NxN matrix, the number of flops is O(N^3). But if we split that matrix into 2 smaller matrices that map half of the input features to another half of the output features, we'll get (N / 2)^3 * 2 which is 1/4 the original cost. Not hard to notice this has some nice properties, but the downside of this is that during training the disjoint feature groups don't talk to one another; luckily, we can solve that by adding another MxN matrix multiply after that to combine the features.
+For example, if we have a NxN matrix, the number of flops in a vector-matrix operation is O(N^2). But if we split that matrix into 2 smaller matrices that map half of the input features to another half of the output features, we'll get (N / 2)^2 * 2 which is 1/2 the original cost. Not hard to notice this has some nice properties, but the downside of this is that during training the disjoint feature groups don't talk to one another; luckily, we can solve that by adding another MxN matrix multiply after that to combine the features which still could be less than the original cost.
 
 ![](/assets/conv_for_gfx/conv_group_diagram.PNG)
 
@@ -133,6 +133,8 @@ For example, if we have a NxN matrix, the number of flops is O(N^3). But if we s
 # Bonus: my original sketch:
 
 ![](/assets/conv_for_gfx/sketch.png)
+
+I ran this through Claude to generate the nice diagrams.
 
 
 # Links
