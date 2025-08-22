@@ -9,6 +9,7 @@ GEM
       eventmachine (>= 0.12.9)
       http_parser.rb (~> 0)
     eventmachine (1.2.7)
+    fastimage (2.4.0)
     ffi (1.15.5-x64-mingw-ucrt)
     forwardable-extended (2.6.0)
     google-protobuf (3.21.12-x64-mingw-ucrt)
@@ -33,6 +34,9 @@ GEM
       webrick (~> 1.7)
     jekyll-feed (0.17.0)
       jekyll (>= 3.7, < 5.0)
+    jekyll-image-size (1.2.1)
+      fastimage (>= 1.8)
+      jekyll (>= 3.7)
     jekyll-jupyter-notebook (0.0.5)
       jekyll
     jekyll-sass-converter (3.0.0)
@@ -76,9 +80,11 @@ PLATFORMS
 DEPENDENCIES
   jekyll
   jekyll-feed
+  jekyll-image-size (~> 1.2)
   jekyll-jupyter-notebook
   jekyll-seo-tag
   minima
+  webrick (~> 1.7)
 
 BUNDLED WITH
-   2.4.2
+   2.6.9

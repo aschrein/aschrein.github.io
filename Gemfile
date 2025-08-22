@@ -9,3 +9,6 @@ group :jekyll_plugins do
 end
 
 gem "minima"
+gem "webrick", "~> 1.7"
+
+gem "jekyll-image-size", "~> 1.2"
