@@ -22,7 +22,7 @@ categories: jekyll update
 
 # Introduction
 
-This is a short post about convolutions in the context of graphics processing. While we haven't switched to vision transformers for everything, CNNs are still the dominant architecture for many tasks and attention is not all we need.
+This is a short post about convolutions in the context of graphics processing. While we haven't switched to vision transformers for everything, CNNs are still the dominant architecture for many tasks and attention is not all we need. In this post I wanted to provide a few sketches that hopefully help understanding and visualizing convolutions in a graphics context.
 
 When introducing convolutions it does often start with something like this:
 
@@ -48,7 +48,7 @@ For inference though as we care about the memory hierarchy and hw specific matri
 
 Everything is a feature vector.
 
-As all we do is just load some vector of values per pixel, multiply it by a matrix and then store that back - pretty straightforward compared to traditional shader workloads. So my point is that this pixel-feature-vector centered point of view makes it easier to think about common operations as we don't really care that much about the width and heights or batch size during inference. Also this helps when working with hw matrix multiplication instructions.
+As all we do is just load some vector of values per pixel, multiply it by a matrix and then store that back - pretty straightforward compared to traditional shader workloads. So my point is that this pixel-feature-vector centered point of view makes it easier to think about common operations as we don't really care that much about the width and heights or batch size during inference, same way we don't care about the specific pixel locations most of the time for traditional shaders. Also this helps when working with hw matrix multiplication instructions.
 
 ![](/assets/conv_for_gfx/conv_diagram.png)
 
@@ -129,6 +129,7 @@ For example, if we have a NxN matrix, the number of flops in a vector-matrix ope
 
 ![](/assets/conv_for_gfx/conv_group_diagram.PNG)
 
+And thinking about the feature vector as a group of features multiple of fixed hw specific matrix size will help you cutting down GOPs and design better operators/fused block.
 
 # Bonus: my original sketch:
 
@@ -154,6 +155,8 @@ I ran this through Claude to generate the nice diagrams.
 [4][Matrices and probability graphs][4]
 
 [4]: https://www.math3ma.com/blog/matrices-probability-graphs
+
+| Thanks to Nadav Geva for reviewing the draft.
 
 <script src="https://utteranc.es/client.js"
         repo="aschrein/aschrein.github.io"
