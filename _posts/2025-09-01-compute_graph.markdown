@@ -346,8 +346,11 @@ for epoch in range(100):
 
 1. The computation graph is built dynamically during the forward pass, allowing for flexible model architectures.
 2. Autograd in PyTorch automatically computes gradients for all operations on tensors with requires_grad=True, simplifying the backpropagation process.
-3. Detaching tensors can help manage gradient flow, especially when combining with non-differentiable operations.
-4. It's crucial to reset gradients after each optimization step to prevent incorrect updates.
+3. Regularization techniques like dropout can help prevent overfitting by randomly deactivating neurons during training.
+4. Weight decay is a regularization technique that adds a penalty on the size of the weights to the loss function, helping to prevent overfitting.
+5. Loss function should be selected based on the specific task, data characteristics and trade-offs for a given problem.
+6. Detaching tensors can help manage gradient flow, especially when combining with non-differentiable operations.
+7. It's crucial to reset gradients after each optimization step to prevent incorrect updates.
 
 # Links
 
