@@ -24,11 +24,11 @@ categories: jekyll update
 
 In this post, I want to share some thoughts on differentiable compute from a practical perspective. Differentiable programming has gained significant traction in recent years, particularly with the rise of deep learning frameworks. By representing computations as graphs, we can leverage automatic differentiation to optimize and train complex models more easily.
 
-The goal of this post is to not go into the mathematical details and fundamentals of anything, rather the goal is to hop on the broad set of tools and concepts from a practical perspective and accumulate notes for myself. Pytorch and image tasks will be primarily focused on.
+The goal of this post is to not go into the mathematical details and fundamentals of anything, rather the goal is to hop on the broad set of tools and concepts from a practical perspective and accumulate notes for myself. Pytorch will be primarily focused on.
 
 # Generic Computation
 
-There's many ways to discribe a computation but for this post we'll focus on a process of transforming inputs into outputs through a series of applications of elementary operations or rules that build the result from the inputs. The basic building blocks of computation in ML are operations like addition, multiplication, and more complex functions that can be composed together. In the context of ML for graphics we ususally jump straight into convolutions which are matrix multiplications, which are scalar multiplications with additions. I'd say that complexity of ML doesn't lie in its compute because usually really basic operations are used, rather the complexity is in getting that compute to produce a useful result. It is also somewhat confusing after analyzing the models that stacking simple compute outperformes analytical solutions in both quality and speed.
+There's many ways to describe a computation but for this post we'll focus on a process of transforming inputs into outputs through a series of applications of elementary operations or rules that build the result from the inputs. The basic building blocks of computation in ML are operations like addition, multiplication, and more complex functions that can be composed together. In the context of ML for graphics we usually jump straight into convolutions which are matrix multiplications, which are scalar multiplications with additions. I'd say that complexity of ML doesn't lie in its compute because usually really basic operations are used, rather the complexity is in getting that compute to produce a useful result. It is also somewhat confusing after analyzing the models that stacking simple compute outperforms analytical solutions in both quality and speed.
 
 Getting batck to matrices, the best way to imagine a matrix-matrix multiplication is via a cube where each cell c_ijk in a cube is a multiplication of elements on its sides A_ik and B_kj, and every element in the result C_ij matrix(third cube side) is a sum reduction(accumulation) along the k axis. You can build a mat mul with just an expand(), element wise multiply and reduce(dim=k). Expand effectively is a way to broadcast values along a new dimension. So we first expand both matrices to have the same 3D dimensions, element wise multiply and then reduce the K dimension.
 
@@ -303,6 +303,42 @@ optimizer.zero_grad()
 This is important because if you don't flush the gradients, they will accumulate over multiple optimization steps, leading to incorrect updates.
 
 That could be a good thing as well, if you want to minimize memory usage you could try to accumulate gradients multiple times for different loss functions calling loss[i].backwards(). On each iteration, in theory, it will only allocate the temporary tensors needed for a given loss function, but that depends.
+
+# Example
+
+```python
+import torch
+import torch.nn as nn
+import torch.optim as optim
+
+class SimpleNet(nn.Module):
+    def __init__(self, input_size, hidden_size, output_size):
+        super().__init__()
+        self.layer1 = nn.Linear(input_size, hidden_size) # matrix multiplication layer
+        self.layer2 = nn.Linear(hidden_size, output_size)
+        self.dropout = nn.Dropout(0.05) # dropout layer with 5% probability
+
+    def forward(self, x):
+        # This builds the compute graph dynamically
+        h = torch.relu(self.layer1(x))  # Non-linearity breaks matrix chain
+        h = self.dropout(h)  # Apply dropout
+        return self.layer2(h) + x # skip connection
+
+# Training loop demonstrating the concepts
+model     = SimpleNet(10, 5, 1)
+optimizer = optim.AdamW(model.parameters(), lr=0.001, weight_decay=0.01) # learning rate and weight decay
+criterion = nn.MSELoss() # mean squared error loss
+
+for epoch in range(100):
+    # Forward pass - builds compute graph
+    outputs = model(inputs)
+    loss = criterion(outputs, targets)  # Scalar terminator
+    
+    # Backward pass - applies chain rule through graph
+    optimizer.zero_grad()  # Reset gradients
+    loss.backward()        # Compute gradients
+    optimizer.step()       # Update parameters
+```
 
 # Links
 
