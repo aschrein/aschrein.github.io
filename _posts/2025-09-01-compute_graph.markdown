@@ -22,7 +22,7 @@ categories: jekyll update
 
 # Introduction
 
-In this post, I want to share some thoughts on differentiable compute from a practical perspective. Differentiable programming has gained significant traction in recent years, particularly with the rise of deep learning frameworks. By representing computations as graphs, we can leverage automatic differentiation to optimize and train complex models more easily.
+In this post, I want to share some thoughts on differentiable compute from a practical perspective. It's a bit unstructured and doesn't have a story, but I might be updating it over time with new notes.
 
 The goal of this post is to not go into the mathematical details and fundamentals of anything, rather the goal is to hop on the broad set of tools and concepts from a practical perspective and accumulate notes for myself. Pytorch will be primarily focused on.
 
@@ -387,6 +387,7 @@ for epoch in range(100):
 
 [7]: https://medium.com/biased-algorithms/what-does-the-backward-function-do-8d8e535afa9d
 
+| Thanks to Nadav Geva for reviewing the draft.
 
 <script src="https://utteranc.es/client.js"
         repo="aschrein/aschrein.github.io"
