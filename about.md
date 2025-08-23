@@ -6,13 +6,12 @@ permalink: /about/
 
 ## Work experience:
 #### February 2021 - Now (100% Remote) [AMD](https://www.amd.com/en)
-  * Leading an effort on modeling+inference+data generation for spatio temporal ray tracing monte carlo denoising.
-    * i8/f8|wmma|Parametric kernel prediction networks|CNN|Unets|Pytorch|Recurrent
-  * C++|d3d12|hlsl| Some internal tooling for testing/capture/replay/rapid prototyping/perf analysis.
+  * Leading an effort on denoising.
+  * Some internal tooling for testing/capture/replay/rapid prototyping/perf analysis.
   * Leading development of GPUOpen code/samples(some of it shipped in a number of AAA games):
     * [Hybrid Stochastic Reflections Sample](https://gpuopen.com/learn/hybrid-reflections/)
     * [Reflections Denoiser](https://github.com/GPUOpen-Effects/FidelityFX-Denoiser/tree/d7dfecbabe7b9523b14e7b067216e06b86e8d189/ffx-reflection-dnsr)
-    * Brixelizer
+    * Brixelizer/GI
       * [Presented by my colleague at GDC 2023](https://www.youtube.com/watch?v=iY15xhuuHPQ)
       * [Presented by my colleague at GDC 2024](https://www.youtube.com/watch?v=dQ2XtHaPN9w)
       
@@ -23,10 +22,10 @@ permalink: /about/
 
 #### May 2017 - May 2019 (Gdansk/Poland) [Intel](https://www.intel.com/)
   * Worked briefly on CPU compilers(icc/Big endian) and runtime libraries(Embedded).
-  * Developed a bespoke gfx API capture/replay tool for experimentation on pass reordering, perf stat gathering and geometry manipulations. Was using internal gpu hw counters api to get high frequency zoomed in picture of the bottlenecks. Was mature enough to capture a bunch of AAA projects.
+  * Developed a gfx API capture/replay tool for experimentation on pass reordering, perf stat gathering and geometry manipulations.
   * Prototyping graphics compiler features for game workloads.
   * Game performance analysis on current/future platforms.
-  * Source-to-Source clang based transpilation tool.
+  * Worked on Source-to-Source clang based transpilation tool for HPC.
 
 #### Jan 2017 - May 2017 (Novosibirsk/Russia) [Bricsys](https://www.bricsys.com/)
   * Direct modeling tools for BricsCAD. Focused on prototyping a tool to copy paste confined geometric features using topological dual representation.
