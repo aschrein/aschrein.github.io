@@ -28,9 +28,9 @@ The goal of this post is to not go into the mathematical details and fundamental
 
 # Generic Computation
 
-There's many ways to describe a computation but for this post we'll focus on a process of transforming inputs into outputs through a series of applications of elementary operations or rules that build the result from the inputs. The basic building blocks of computation in ML are operations like addition, multiplication, and more complex functions that can be composed together. In the context of ML for graphics we usually jump straight into convolutions which are matrix multiplications, which are scalar multiplications with additions. I'd say that complexity of ML doesn't lie in its compute because usually really basic operations are used, rather the complexity is in getting that compute to produce a useful result. It is also somewhat confusing after analyzing the models that stacking simple compute outperforms analytical solutions in both quality and speed.
+There's many ways to describe a computation but for this post we'll focus on a process of transforming inputs into outputs through a series of applications of elementary operations or rules that build the result from the inputs. The basic building blocks of computation in ML are operations like addition, multiplication, and more complex functions that can be composed together. In the context of ML for graphics we usually jump straight into convolutions which are matrix multiplications, which are scalar multiplications with additions. I'd say that complexity of ML doesn't lie in its compute because usually really basic operations are used, rather the complexity is in getting that compute to produce a useful result. It is also somewhat confusing after analyzing the models that stacking simple compute outperforms analytical solutions in both quality and speed, in many empirical cases.
 
-Getting batck to matrices, the best way to imagine a matrix-matrix multiplication is via a cube where each cell c_ijk in a cube is a multiplication of elements on its sides A_ik and B_kj, and every element in the result C_ij matrix(third cube side) is a sum reduction(accumulation) along the k axis. You can build a mat mul with just an expand(), element wise multiply and reduce(dim=k). Expand effectively is a way to broadcast values along a new dimension. So we first expand both matrices to have the same 3D dimensions, element wise multiply and then reduce the K dimension.
+Getting back to matrices, the best way to imagine a matrix-matrix multiplication is via a cube where each cell c_ijk in a cube is a multiplication of elements on its sides A_ik and B_kj, and every element in the result C_ij matrix(third cube side) is a sum reduction(accumulation) along the k axis. You can build a mat mul with just an expand(), element wise multiply and reduce(dim=k). Expand effectively is a way to broadcast values along a new dimension. So we first expand both matrices to have the same 3D dimensions, element wise multiply and then reduce the K dimension.
 
 ![](/assets/compute_graph/mm.png)
 
@@ -38,13 +38,13 @@ Getting batck to matrices, the best way to imagine a matrix-matrix multiplicatio
 
 Once you have a grasp on matrix multiplication, you can build most ML models. Matrix expresses a linear fully connected pairwise relationship between an input stack of nodes and an output stack of nodes, that's generic enough to cover most use cases. Convolutions can be represented as a big matrix multiplication in theory, in practice they are vector-matrix multiplication, but what you can do is to stack/batch the input feature vectors to comprise a matrix and then you're back to a matrix-matrix multiplication. As long as you have a dot product somewhere you can probably map that to a matrix-matrix multiplication problem.
 
-Something useful to consider is that the memory footprint of a NxN matrix is O(N^2) but the compute required to multiply that matrix is O(N^3). That means that there's N expressions after the cube expansion before reduce and if we don't have to spill to memory and keep everything local it maps pretty well to modern architectures that have orders of magnitude more FLOPS than memory bandwidth. In other words having a large FLOP/byte is what makes the matrix multiplications map well to modern architectures, in theory.
+Something useful to consider is that the memory footprint of a NxN matrix is O(N^2) but the compute required to multiply that matrix is O(N^3). That means that there's N expressions after the cube expansion for each element in memory, before reduce and if we don't have to spill to memory and keep everything local it maps pretty well to modern architectures that have orders of magnitude more FLOPS than memory bandwidth. In other words having a large FLOP/byte is what makes the matrix multiplications map well to modern architectures, in theory.
 
-The other concept to understand is the reducibility of a series of matrix operations into a single matrix multiplication. This is important for designing the models. There's sometimes cases when you still want to keep some matrices in a redundant expression but usually you don't. Also when doing low rank approximations you still keep chains of matmuls. Any scalar, vector or matrix multiplication can be merged as a single matrix multiplication if you reshape the tensors appropriately. What happens then when we want to build a non linear transformation is that we just apply a non linear function in-between the matrix multiplications - that way it doesn't reduce to a single matrix multiplication.
+The other concept to understand is the reducibility of a series of matrix operations into a single matrix multiplication. This is important for designing the models. There's sometimes cases when you still want to keep some matrices in a redundant expression but usually you don't. Also when doing low rank approximations you still keep chains of matmuls. Any scalar, vector or matrix multiplication can be merged as a single matrix multiplication if you reshape the tensors appropriately. What happens then when we want to build a non-linear transformation is that we just apply a non-linear function in-between the matrix multiplications - that way it doesn't reduce to a single matrix multiplication.
 
 # DAG
 
-Directed Acyclic Graph (DAG) is a directed graph with no cycles. Sort of a tree but each node can have more than one parent. In the context of compute graphs, this means that the flow of data and operations moves in one direction, from inputs to outputs, without any causation feedback loops. There's loops, conditions and jumps in a generic compute graph. Loops are a way to unroll the computation or condition a computation, as the time passes but it doesn't inverse the causation. In ML compute graphs we usually don't have loops and jumps or conditions so no need to worry about it at all. We have lerps and when(b, x, y) but that could be rewritten into just lerps. There's ways things are optimized but effectively you can think of it as if everythinng is computed in an ML compute graph during forward pass, thus we arrive at DAGs. When there's a loop in the python code what happens is that the compute graph is being built dynamically and all it does is just instantiates a new graph.
+Directed Acyclic Graph (DAG) is a directed graph with no cycles. Sort of a tree but each node can have more than one parent. In the context of compute graphs, this means that the flow of data and operations moves in one direction, from inputs to outputs, without any causation feedback loops. There's loops, conditions and jumps in a generic compute graph. Loops are a way to unroll the computation or condition a computation, as the time passes but it doesn't inverse the causation. In ML compute graphs we usually don't have loops and jumps or conditions so no need to worry about it at all. We have lerps and when(b, x, y) but that could be rewritten into just lerps. There's ways things are optimized but effectively you can think of it as if everythinng is computed in an ML compute graph during forward pass, thus we arrive at DAGs. When there's a loop in the python code what happens is that the compute graph is being built dynamically and all it does is just instantiates a new node in the graph.
 
 # Dynamic graph building
 
@@ -86,7 +86,7 @@ Python interpreter executes the loop and appends a new node to the dynamic compu
 
 # Parameter Update
 
-Jumping a bit forward, we perform training by computing the gradients by applying the chain rule through the graph and then in order to minimize our scalar final output we subtract the gradient of the loss function in respect to that node at the terminator nodes(learnable parameters) multiplied by a learning rate, this effectively pushes the parameter vector into the direction of steepest descent given that the function is differentiable and well behaved, and the learning rate is small enough. If we want to optimize for an ensemble of losses, we just add them together or we can run backpropagation multiple times to accumulate the gradients.
+Jumping a bit forward, we perform training by computing the gradients by applying the chain rule through the graph and then in order to minimize our scalar final output we subtract the gradient of the loss function with respect to that node at the terminator nodes(learnable parameters) multiplied by a learning rate, this effectively pushes the parameter vector into the direction of steepest descent given that the function is differentiable and well behaved, and the learning rate is small enough. If we want to optimize for an ensemble of losses, we just add them together or we can run backpropagation multiple times to accumulate the gradients.
 
 The formulas and the expansions of the partial derivative for a parameter are assuming that the other parameters and inputs are constant. This is a linear assumption and that has its limitations, as in reality all parameters are interdependent and the learning rate is not infinitesimal, that's why we need to be careful selecting the hyperparameters and it takes many learning epochs for all the parameters to adjust to the changes in other parameters.
 
@@ -179,7 +179,7 @@ And then this could be represented as a compute graph:
 
 As long as it's comprised of differentiable operations, we can compute gradients with respect to any input variable and optimize for parameters using backpropagation. I recommend watching [Andrej Karpathy][1] for a deeper understanding of these concepts.
 
-It is also preferrable to accumulate the gradients for many parameters at the same time at any node before continuing further. It is important for performance, if we, say, have a matrix multiplication we don't want to follow the nodes depth first, rather we want to compute the gradients for all the input nodes using accelerated matrix multiplies.
+It is also preferable to accumulate the gradients for many parameters at the same time at any node before continuing further. It is important for performance, if we, say, have a matrix multiplication we don't want to follow the nodes depth first, rather we want to compute the gradients for all the input nodes using accelerated matrix multiplies.
 
 Example snippet from [TinyGrad][2]:
 ```python
@@ -188,7 +188,7 @@ Example snippet from [TinyGrad][2]:
 (UPat(Ops.MUL, name="ret"), lambda ctx, ret: (ret.src[1]*ctx, ret.src[0]*ctx)),
 ```
 
-The job for auto grad is to define a rule for each node that specifies how to compute gradients for its inputs. After that the chain rule comes into play. ctx - is the gradient accumulator, ret - is the input values of the node. On a side node the auto grad system needs to keep alive most of the time all the intermediate values which expands the memory usage and needs to be taken into account during training to maximize the VRAM utilization. Some functions like ReLU don't need to store the inputs - the sign is enough for the gradient computation.
+The job for auto grad is to define a rule for each node that specifies how to compute gradients for its inputs. After that the chain rule comes into play. ctx - is the gradient accumulator, ret - is the input values of the node. On a side note, the auto grad system needs to keep alive most of the time all the intermediate values which expands the memory usage and needs to be taken into account during training to maximize the VRAM utilization. Some functions like ReLU don't need to store the inputs - the sign is enough for the gradient computation.
 
 # Gradient Noise
 
@@ -234,7 +234,7 @@ $$
 
 ![](/assets/compute_graph/skip.png)
 
-This could be thought of as g(x) computing the delta to the input, rather than computing a whole new fuction, that somewhat makes it easier for the network to learn specific things that would otherwise require it to first learn the identity.
+This could be thought of as g(x) computing the delta to the input, rather than computing a whole new function, that somewhat makes it easier for the network to learn specific things that would otherwise require it to first learn the identity.
 
 The effective gradient at x will be such(L is the loss function):
 
@@ -270,7 +270,7 @@ swish(x) = x \cdot \sigma(x)\\
 swiglu(x) = swish(x \cdot W + B) \otimes (x \cdot V + C)
 $$
 
-What it does is makes it easier for the network to learn quadratic relationships x * y in just one layer \[[4]\] wereas with a normal MLP+relu you'd need 3 layers to learn that relationship.
+What it does is makes it easier for the network to learn quadratic relationships x * y in just one layer \[[4]\] whereas with a normal MLP+relu you'd need 3 layers to learn that relationship.
 
 # Detach
 
@@ -284,7 +284,7 @@ with torch.no_grad():
     # Perform operations without tracking gradients
 ```
 
-One useful application of that is when combining with non differentiable operations:
+One useful application of that is when combining with non-differentiable operations:
 
 ```python
 x = x + (f(x) - x).detach() # Combine with non-differentiable operation like quantization or clamping
@@ -294,7 +294,7 @@ This will pass the gradients through the detached tensor by combining it with th
 
 # Gradient reset
 
-By default pytorch .backwards() accumulates gradients and releases the computation graph to save memory, so you need to zero them out manually after each optimization step.
+By default pytorch .backward() accumulates gradients and releases the computation graph to save memory, so you need to zero them out manually after each optimization step.
 
 ```python
 optimizer.zero_grad()
@@ -302,7 +302,7 @@ optimizer.zero_grad()
 
 This is important because if you don't flush the gradients, they will accumulate over multiple optimization steps, leading to incorrect updates.
 
-That could be a good thing as well, if you want to minimize memory usage you could try to accumulate gradients multiple times for different loss functions calling loss[i].backwards(). On each iteration, in theory, it will only allocate the temporary tensors needed for a given loss function, but that depends.
+That could be a good thing as well, if you want to minimize memory usage you could try to accumulate gradients multiple times for different loss functions calling loss[i].backward(). On each iteration, in theory, it will only allocate the temporary tensors needed for a given loss function, but that depends.
 
 # Example
 
@@ -314,13 +314,15 @@ import torch.optim as optim
 class SimpleNet(nn.Module):
     def __init__(self, input_size, hidden_size, output_size):
         super().__init__()
-        self.layer1 = nn.Linear(input_size, hidden_size) # matrix multiplication layer
-        self.layer2 = nn.Linear(hidden_size, output_size)
-        self.dropout = nn.Dropout(0.05) # dropout layer with 5% probability
+        self.layer1      = nn.Linear(input_size, hidden_size) # matrix multiplication layer
+        self.layer2      = nn.Linear(hidden_size, output_size)
+        # inplace=True will modify the input tensor directly(unsafe if the input is shared)
+        self.activation  = nn.ReLU(inplace=True)
+        self.dropout     = nn.Dropout(0.05) # dropout activations with 5% probability
 
     def forward(self, x):
         # This builds the compute graph dynamically
-        h = torch.relu(self.layer1(x))  # Non-linearity breaks matrix chain
+        h = self.activation(self.layer1(x))  # Non-linearity breaks matrix chain
         h = self.dropout(h)  # Apply dropout
         return self.layer2(h) + x # skip connection
 
@@ -339,6 +341,13 @@ for epoch in range(100):
     loss.backward()        # Compute gradients
     optimizer.step()       # Update parameters
 ```
+
+# Key takeaways
+
+1. The computation graph is built dynamically during the forward pass, allowing for flexible model architectures.
+2. Autograd in PyTorch automatically computes gradients for all operations on tensors with requires_grad=True, simplifying the backpropagation process.
+3. Detaching tensors can help manage gradient flow, especially when combining with non-differentiable operations.
+4. It's crucial to reset gradients after each optimization step to prevent incorrect updates.
 
 # Links
 
