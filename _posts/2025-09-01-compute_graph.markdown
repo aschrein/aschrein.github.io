@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  "Notes on differentiable compute graphs"
+title:  "Notes on AutoGrad"
 
 date:   2025-08-23 01:00:00 +0000
 categories: jekyll update
@@ -38,7 +38,9 @@ Getting back to matrices, the best way to imagine a matrix-matrix multiplication
 
 Once you have a grasp on matrix multiplication, you can build most ML models. Matrix expresses a linear fully connected pairwise relationship between an input stack of nodes and an output stack of nodes, that's generic enough to cover most use cases. Convolutions can be represented as a big matrix multiplication in theory, in practice they are vector-matrix multiplication, but what you can do is to stack/batch the input feature vectors to comprise a matrix and then you're back to a matrix-matrix multiplication. As long as you have a dot product somewhere you can probably map that to a matrix-matrix multiplication problem.
 
-Something useful to consider is that the memory footprint of a NxN matrix is O(N^2) but the compute required to multiply that matrix is O(N^3). That means that there's N expressions after the cube expansion for each element in memory, before reduce and if we don't have to spill to memory and keep everything local it maps pretty well to modern architectures that have orders of magnitude more FLOPS than memory bandwidth. In other words having a large FLOP/byte is what makes the matrix multiplications map well to modern architectures, in theory.
+## Matrix multiplication - the building block for the era of GPUs
+
+Something useful to consider is that the memory footprint of a NxN matrix is O(N^2) but the compute required to multiply that matrix is O(N^3). That means that there's N expressions after the cube expansion for each element in memory, before reduce and if we don't have to spill to memory and keep everything local it maps pretty well to modern GPU architectures that have orders of magnitude more FLOPS than memory bandwidth. In other words having a large FLOP/byte is what makes the matrix multiplications map well to the hardware, in theory.
 
 The other concept to understand is the reducibility of a series of matrix operations into a single matrix multiplication. This is important for designing the models. There's sometimes cases when you still want to keep some matrices in a redundant expression but usually you don't. Also when doing low rank approximations you still keep chains of matmuls. Any scalar, vector or matrix multiplication can be merged as a single matrix multiplication if you reshape the tensors appropriately. What happens then when we want to build a non-linear transformation is that we just apply a non-linear function in-between the matrix multiplications - that way it doesn't reduce to a single matrix multiplication.
 
@@ -324,7 +326,10 @@ class SimpleNet(nn.Module):
         # This builds the compute graph dynamically
         h = self.activation(self.layer1(x))  # Non-linearity breaks matrix chain
         h = self.dropout(h)  # Apply dropout
-        return self.layer2(h) + x # skip connection
+        y = self.layer2(h) + x # skip connection
+        # Quantize symmetrically to int8 using scale 1.0 / 127.0
+        y_quantized = (y.detach() * 127.0).round().clamp(-128.0, 127.0) / 127.0
+        return y + (y_quantized - y).detach()
 
 # Training loop demonstrating the concepts
 model     = SimpleNet(10, 5, 1)
