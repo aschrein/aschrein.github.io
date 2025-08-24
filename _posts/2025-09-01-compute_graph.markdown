@@ -406,7 +406,7 @@ On a side note, the auto grad system needs to keep alive most of the time all th
 
 # Gradient Noise
 
-It's important to note that gradient is a random variable because our training batch is comprised of a finite number of samples, each with their own noise and variability. This means that the gradient can fluctuate significantly from batch to batch, and it's crucial for the optimizer to account for this uncertainty. It's usually the case that it's not certain that increasing the batch size always helps, the relationship between batch size and the optimization horizon is complex and context-dependent.
+The gradient is a random variable because our training batch is comprised of a finite number of samples, each with their own noise and variability. This means that the gradient can fluctuate significantly from batch to batch, and it's crucial for the optimizer to account for this uncertainty. It's usually the case that it's not certain that increasing the batch size always helps, the relationship between batch size and the optimization horizon is complex and context-dependent.
 
 # Loss function
 
@@ -416,7 +416,7 @@ So far we've been discussing backpropagation and its role in computing gradients
 
 ![](/assets/compute_graph/loss_terminator.png)
 
-It's important to note that the loss function not only provides a scalar output for optimization but also serves as a guide for the learning process. By shaping the loss landscape, it influences how gradients are propagated back through the network, ultimately affecting the learned representations and model performance.
+The loss function not only provides a scalar output for optimization but also serves as a guide for the learning process. By shaping the loss landscape, it influences how gradients are propagated back through the network, ultimately affecting the learned representations and model performance.
 
 Often the case that ground truth is not perfectly achievable or it has inherent error, and the loss function must be robust to these factors as well as making sure that the tradeoff that the model achieves with respect to its limited capacity is appropriate for the target task. This is where data augmentation, regularization, robust loss functions and other techniques to smoothen the loss landscape come into play to kick out the model from trivial overfitting or just not generalizing enough.
 
