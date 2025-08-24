@@ -190,7 +190,152 @@ Example snippet from [TinyGrad][2]:
 (UPat(Ops.MUL, name="ret"), lambda ctx, ret: (ret.src[1]*ctx, ret.src[0]*ctx)),
 ```
 
-The job for auto grad is to define a rule for each node that specifies how to compute gradients for its inputs. After that the chain rule comes into play. ctx - is the gradient accumulator, ret - is the input values of the node. On a side note, the auto grad system needs to keep alive most of the time all the intermediate values which expands the memory usage and needs to be taken into account during training to maximize the VRAM utilization. Some functions like ReLU don't need to store the inputs - the sign is enough for the gradient computation.
+The job for auto grad is to define a rule for each node that specifies how to compute gradients for its inputs, and increment them iteratively. After that the recursive chain rule comes into play. ctx - is the gradient accumulator, ret - is the input values of the node. The system doesn't compute the complete gradient at each node like we'd do symbolically, rather it increments the gradients as we go.
+
+# Toy AutoGrad Implementation
+
+```python
+import math
+import random
+
+class AutoGradNode:
+    def __init__(self):
+        self.grad = 0.0
+        self.dependencies = []
+
+    def zero_grad(self):
+        self.grad = 0.0
+
+    def __add__(self, other): return Add(self, other)
+    def __mul__(self, other): return Mul(self, other)
+    def __sub__(self, other): return Sub(self, other)
+
+    def backward(self):
+        # topo sort the compute graph
+        visited = set()
+        topo_order = []
+
+        def dfs(node):
+            if node in visited:
+                return
+            visited.add(node)
+            for dep in node.dependencies:
+                dfs(dep)
+            topo_order.append(node)
+            node.zero_grad() # we don't want to accumulate gradients
+
+        dfs(self)
+
+        self.compute_self_grad()
+
+        # Reverse the topological order for backpropagation
+        for node in reversed(topo_order):
+            # print(f"Backpropagating through {node}")
+            node._backward()
+
+        # for node in reversed(topo_order):
+        #     print(f"Node: {node}, Value: {node.materialize()}, Grad: {node.grad}")
+
+class Variable(AutoGradNode):
+    def __init__(self, value):
+        super().__init__()
+        self.value = value
+
+    def materialize(self): return self.value
+
+    def _backward(self):
+        pass
+
+class LearnableParameter(AutoGradNode):
+    def __init__(self):
+        super().__init__()
+        self.value = random.random()
+
+    def materialize(self): return self.value
+
+    def _backward(self):
+        pass
+
+class Abs(AutoGradNode):
+    def __init__(self, a):
+        super().__init__()
+        self.a = a
+        self.dependencies = [a]
+
+    def materialize(self): return abs(self.a.materialize())
+
+    def compute_self_grad(self):
+        self.grad = 1.0 if self.a.materialize() > 0 else -1.0
+
+    def _backward(self):
+        self.a.grad += self.grad
+
+class Sub(AutoGradNode):
+    def __init__(self, a, b):
+        super().__init__()
+        self.a = a
+        self.b = b
+        self.dependencies = [a, b]
+
+    def materialize(self): return self.a.materialize() - self.b.materialize()
+
+    def _backward(self):
+        self.a.grad += self.grad
+        self.b.grad -= self.grad
+
+class Add(AutoGradNode):
+    def __init__(self, a, b):
+        super().__init__()
+        self.a = a
+        self.b = b
+        self.dependencies = [a, b]
+
+    def materialize(self): return self.a.materialize() + self.b.materialize()
+
+    def _backward(self):
+        self.a.grad += self.grad
+        self.b.grad += self.grad
+
+class Mul(AutoGradNode):
+    def __init__(self, a, b):
+        super().__init__()
+        self.a = a
+        self.b = b
+        self.dependencies = [a, b]
+
+    def materialize(self): return self.a.materialize() * self.b.materialize()
+
+    def _backward(self):
+        self.a.grad += self.grad * self.b.materialize()
+        self.b.grad += self.grad * self.a.materialize()
+
+a = LearnableParameter()
+b = LearnableParameter()
+
+for epoch in range(3000):
+
+    x = Variable(random.random())
+    z = x * a + b
+    loss = Abs(z - (x * Variable(1.777) + Variable(1.55))) # L1 loss to Ax+B
+
+    print(f"Epoch {epoch}: loss = {loss.materialize()}; a = {a.materialize()}, b = {b.materialize()}")
+    # Backward pass
+    # Gradient reset happens internally in the backward pass
+    loss.backward()
+
+    # Update parameters
+    learning_rate = 0.0133
+
+    for node in [a, b]:
+        # print(f"grad = {node.grad}")
+        node.value -= learning_rate * node.grad
+
+# Output:
+# Epoch 2999: loss = 0.01567975570265867; a = 1.7633097734363865, b = 1.5461415012182813
+
+```
+
+On a side note, the auto grad system needs to keep alive most of the time all the intermediate values which expands the memory usage and needs to be taken into account during training to maximize the VRAM utilization. Some functions like ReLU don't need to store the inputs - the sign is enough for the gradient computation.
 
 # Gradient Noise
 
