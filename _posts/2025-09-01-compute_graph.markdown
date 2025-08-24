@@ -226,7 +226,7 @@ class AutoGradNode:
 
         dfs(self)
 
-        self.compute_self_grad()
+        self.grad = 1.0 # seed the gradient
 
         # Reverse the topological order for backpropagation
         for node in reversed(topo_order):
@@ -264,11 +264,19 @@ class Abs(AutoGradNode):
 
     def materialize(self): return abs(self.a.materialize())
 
-    def compute_self_grad(self):
-        self.grad = 1.0 if self.a.materialize() > 0 else -1.0
+    def _backward(self):
+        self.a.grad += self.grad * (1.0 if self.a.materialize() > 0 else -1.0)
+
+class Square(AutoGradNode):
+    def __init__(self, a):
+        super().__init__()
+        self.a = a
+        self.dependencies = [a]
+
+    def materialize(self): return self.a.materialize() ** 2
 
     def _backward(self):
-        self.a.grad += self.grad
+        self.a.grad += self.grad * 2.0 * self.a.materialize()
 
 class Sub(AutoGradNode):
     def __init__(self, a, b):
@@ -315,8 +323,8 @@ b = LearnableParameter()
 for epoch in range(3000):
 
     x = Variable(random.random())
-    z = x * a + b
-    loss = Abs(z - (x * Variable(1.777) + Variable(1.55))) # L1 loss to Ax+B
+    z = x * x * a + b
+    loss = Square(z - (x * x * Variable(1.777) + Variable(1.55))) # L2 loss to Ax^2+B
 
     print(f"Epoch {epoch}: loss = {loss.materialize()}; a = {a.materialize()}, b = {b.materialize()}")
     # Backward pass
@@ -331,8 +339,8 @@ for epoch in range(3000):
         node.value -= learning_rate * node.grad
 
 # Output:
-# Epoch 2999: loss = 0.01567975570265867; a = 1.7633097734363865, b = 1.5461415012182813
-
+# Epoch 2999: loss = 1.0971718506497338e-07; a = 1.7761125496912944, b = 1.5503818948331147
+# Target: x * x * 1.777 + 1.55
 ```
 
 On a side note, the auto grad system needs to keep alive most of the time all the intermediate values which expands the memory usage and needs to be taken into account during training to maximize the VRAM utilization. Some functions like ReLU don't need to store the inputs - the sign is enough for the gradient computation.
