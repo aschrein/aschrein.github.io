@@ -423,9 +423,10 @@ Often the case that ground truth is not perfectly achievable or it has inherent 
 For image tasks common techniques for data augmentation include random cropping, flipping, rotation, shearing, scaling, mixups and color jittering. These techniques help to create a more diverse training dataset, making the model more resilient to variations in the input data.
 
 Common regularization techniques include L1 and L2 regularization, dropout.
+
 $$
-L2_{loss}: L= \mathcal{L}_{data} + \lambda \sum w_i^2\\
-L1_{loss}: L=\mathcal{L}_{data} + \lambda \sum |w_i|\\
+L2= L_{data} + \lambda \sum w_i^2\\
+L1= L_{data} + \lambda \sum |w_i|\\
 $$
 
 We effectively add the sum of magnitudes of the parameters to the loss function, which is not what happens practically for AdamW, for example, when the weight decay is decoupled from the main loss function gradients.
