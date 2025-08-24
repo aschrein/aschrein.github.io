@@ -400,6 +400,8 @@ We get this dotgraph at .tmp/graph.dot:
 
 ![](/assets/compute_graph/toy_grad_dotgraph.png)
 
+Important takeaway here is that the gradient distribution is a local operator and it's useful to think that way. Addition just passes the gradients to both terms, while multiplication scales the gradients by the value of the other term.
+
 On a side note, the auto grad system needs to keep alive most of the time all the intermediate values which expands the memory usage and needs to be taken into account during training to maximize the VRAM utilization. Some functions like ReLU don't need to store the inputs - the sign is enough for the gradient computation.
 
 # Gradient Noise
