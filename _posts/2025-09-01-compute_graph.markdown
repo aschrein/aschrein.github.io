@@ -210,7 +210,7 @@ class AutoGradNode:
     def __mul__(self, other): return Mul(self, other)
     def __sub__(self, other): return Sub(self, other)
 
-    def backward(self):
+    def get_topo_sorted_list_of_deps(self):
         # topo sort the compute graph
         visited = set()
         topo_order = []
@@ -226,6 +226,24 @@ class AutoGradNode:
 
         dfs(self)
 
+        return topo_order
+
+    def get_pretty_name(self): return self.__class__.__name__
+
+    def pretty_print_dot_graph(self):
+        topo_order = self.get_topo_sorted_list_of_deps()
+        _str = ""
+        _str += "digraph G {\n"
+        for node in topo_order:
+            _str += f"    {id(node)} [label=\"{node.get_pretty_name()}\"];\n"
+            for dep in node.dependencies:
+                _str += f"    {id(node)} -> {id(dep)};\n"
+        _str += "}"
+        return _str
+    
+    def backward(self):
+        topo_order = self.get_topo_sorted_list_of_deps()
+
         self.grad = 1.0 # seed the gradient
 
         # Reverse the topological order for backpropagation
@@ -237,9 +255,16 @@ class AutoGradNode:
         #     print(f"Node: {node}, Value: {node.materialize()}, Grad: {node.grad}")
 
 class Variable(AutoGradNode):
-    def __init__(self, value):
+    def __init__(self, value, name=None):
         super().__init__()
         self.value = value
+        self.name = name
+
+    def get_pretty_name(self):
+        if self.name:
+            return f"Variable({self.name})"
+        else:
+            return str(self.value)
 
     def materialize(self): return self.value
 
@@ -250,6 +275,9 @@ class LearnableParameter(AutoGradNode):
     def __init__(self):
         super().__init__()
         self.value = random.random()
+
+    def get_pretty_name(self):
+        return f"LearnableParameter({round(self.value, 2)})"
 
     def materialize(self): return self.value
 
@@ -322,7 +350,7 @@ b = LearnableParameter()
 
 for epoch in range(3000):
 
-    x = Variable(random.random())
+    x = Variable(random.random(), name="x")
     z = x * x * a + b
     loss = Square(z - (x * x * Variable(1.777) + Variable(1.55))) # L2 loss to Ax^2+B
 
@@ -338,10 +366,17 @@ for epoch in range(3000):
         # print(f"grad = {node.grad}")
         node.value -= learning_rate * node.grad
 
+with open(".tmp/graph.dot", "w") as f:
+    f.write(loss.pretty_print_dot_graph())
+
 # Output:
 # Epoch 2999: loss = 1.0971718506497338e-07; a = 1.7761125496912944, b = 1.5503818948331147
-# Target: x * x * 1.777 + 1.55
+# Target: 1.777, 1.55
 ```
+
+We get this dotgraph at .tmp/graph.dot:
+
+![](/assets/compute_graph/toy_grad_dotgraph.png)
 
 On a side note, the auto grad system needs to keep alive most of the time all the intermediate values which expands the memory usage and needs to be taken into account during training to maximize the VRAM utilization. Some functions like ReLU don't need to store the inputs - the sign is enough for the gradient computation.
 
