@@ -2,7 +2,7 @@
 layout: post
 title:  "Adding tensor support to the toy AutoGrad"
 
-date:   2025-08-24 01:00:00 +0000
+date:   2025-08-26 01:00:00 +0000
 categories: jekyll update
 ---
 
@@ -23,7 +23,7 @@ categories: jekyll update
 # Post
 
 In the previous [post](https://aschrein.github.io/jekyll/update/2025/08/24/ext_autograd_to_vectors.html) I've demonstrated how to extend a toy automatic differentiation system to handle vectors, instead of scalar values.
-In this update I'll extend it to handle tensors. We first need to add the main Tensor class. The job of this class is to represent multi-dimensional arrays and provide the necessary operations for automatic differentiation. This is implemented using a simple linear array and a rule to access elements based on their multi-dimensional indices. The rule is quite trivial, we just compute the dot product of the indices with the strides to compute a flat index. The strides are computed as a simple multiplication of the dimensions:
+In this update I'll extend it to handle tensors. Tensors are going to become crucial to support matrix multiplications, convolutions, and attention. We first need to add the main Tensor class. The job of this class is to represent multi-dimensional arrays and provide the necessary operations for automatic differentiation. This is implemented using a simple linear array and a rule to access elements based on their multi-dimensional indices. The rule is quite trivial, we just compute the dot product of the indices with the strides to compute a flat index. The strides are computed as a simple multiplication of the dimensions:
 
 ```python
 strides = [1]
