@@ -285,7 +285,10 @@ class LearnableParameter(AutoGradNode):
             self.values.data[i] = random.random()
 
     def get_pretty_name(self):
-        return f"LearnableParameter({[round(v, 3) for v in self.values.data]})"
+        if len(self.values.data) <= 3:
+            return f"LearnableParameter({[round(v, 3) for v in self.values.data]})"
+        else:
+            return f"LearnableParameter(shape={self.values.shape})"
 
     def materialize(self): return self.values
 
@@ -574,6 +577,12 @@ After a few minutes you should get this plot:
 ![](/assets/compute_graph/mlp_0.png)
 
 The dotted line represents the target function we are trying to learn, while the solid line represents the output of our MLP. As you can see, the MLP is able to learn the target function quite well.
+
+This is our compute graph:
+
+![](/assets/compute_graph/mlp_compute_graph_0.png)
+
+It looks like we have 2 branches in the computation graph: 1 for the MLP and the other for the target function. In reality we can replace the target function by just raw data and it will yield the same result. So you could think of MLP as being an automatic approximation discovery mechanism to a black box.
 
 <script src="https://utteranc.es/client.js"
         repo="aschrein/aschrein.github.io"
