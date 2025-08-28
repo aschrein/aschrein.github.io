@@ -1,8 +1,8 @@
 ---
 layout: post
-title:  "Adding tensor support to AutoGrad"
+title:  "Adding MLP support to AutoGrad"
 
-date:   2025-08-26 01:00:00 +0000
+date:   2025-08-28 01:00:00 +0000
 categories: jekyll update
 ---
 
@@ -22,21 +22,14 @@ categories: jekyll update
 
 # Post
 
-In the previous [post](https://aschrein.github.io/jekyll/update/2025/08/24/ext_autograd_to_vectors.html) I've demonstrated how to extend a toy automatic differentiation system to handle vectors, instead of scalar values.
-In this update I'll extend it to handle tensors. Tensors are going to become crucial to support matrix multiplications, convolutions, and attention. We first need to add the main Tensor class. The job of this class is to represent multi-dimensional arrays and provide the necessary operations for automatic differentiation. This is implemented using a simple linear array and a rule to access elements based on their multi-dimensional indices. The rule is quite trivial, we just compute the dot product of the indices with the strides to compute a flat index. The strides are computed as a simple multiplication of the dimensions:
+In the previous [post](https://aschrein.github.io/jekyll/update/2025/08/24/ext_autograd_to_tensors.html) I've added support for tensors to the toy automatic differentiation system. Tensors are basically a linear array with a rule to access it in a multi-dimensional fasion.
 
-```python
-strides = [1]
-for d in reversed(shape):
-    strides.insert(0, strides[0] * d)
+In this update I'll extend it to handle MLPs. And for that we need to add a linear layer aka matrix multiplication.
+First thing we add is a Matrix class, right next to the learnable parameter class. It's job is to own a array of learnable parameters [out_features, in_channels]. The way it works in this setup is that we don't care about the actual shape of the tensor, all we need to know is that it is an array of N * [in_features], then what we do is we multiply each such array by the matrix and the result is a new array of N * [out_features].
 
-indices = [0, 1, 2...]
+Next thing we need to add the matrix multiplication node, its job is to take a node that produces a tensor and a node that produces the matrix, and multiply the last channels of the tensor by the matrix to produces a new tensor. Next we use that to backpropagate the gradient. If you do the math you'll see that gradients to the tensor are just gradients of this node multiplied by the transpose matrix, and gradients for the weights is an outer product of the node's gradients and the input channels. That's coming up from the basic rules of back propagation for addition and multiplication.
 
-flat_index = dot(indices, strides)
-
-```
-
-After that everything is pretty much the same as handling the vectors.
+Next I add LeakyReLU activation function for chaining matrix multiplies together to comprise the feedforward MLP pass. Another thing we need is an optimizer. For that I implemented a basic AdamW without variance bias corrections. AdamW is a variant of the Adam optimizer that decouples weight decay from the optimization steps. Meaning that the weight decay is applied directly to the weights after the update step, rather than being included in the loss function and gradients. The function is pretty similar we just keep an exponential running average for grad and grad*grad, basically new_val=lerp(old_val, update, 0.1) - that's just TAA applied to the grads. Then we divide the mean grad by the standard deviation of the variance. We compute variance as avg(t^2) - avg(t)^2, the rule for convex or concave functions is such that this expression is always positive, so to get the standard deviation we need to take the square root of it. This acts as a dynamic scale for the gradient, the bigger the variance, the smaller the learning rate which helps a lot to stabilize the training. It actually works unreasonably well for a simple technique like this. One thing I've omitted is the statistical bias correction but you can look it up.
 
 Source Code:
 
@@ -299,6 +292,105 @@ class LearnableParameter(AutoGradNode):
     def _backward(self):
         pass
 
+class Matrix(AutoGradNode):
+    def __init__(self, in_channels, out_features):
+        super().__init__(shape=[out_features, in_channels])
+        self.values = Tensor([out_features, in_channels])
+        for i in range(len(self.values.data)):
+            self.values.data[i] = random.random()
+
+    def get_pretty_name(self):
+        return f"Matrix({self.values.shape})"
+
+    def materialize(self):
+        return self.values
+
+    def _backward(self):
+        pass
+
+    def transposed(self):
+        in_features  = self.values.shape[1]
+        out_features = self.values.shape[0]
+        transposed   = Matrix(in_channels=out_features, out_features=in_features)
+        for i in range(out_features):
+            for j in range(in_features):
+                transposed.values.data[i * in_features + j] = self.values.data[j * out_features + i]
+        return transposed
+
+def tensor_matrix_multiply(tensor, matrix):
+    in_features           = tensor.shape[-1]
+    out_features          = matrix.shape[0]
+    assert in_features == matrix.shape[1], f"Incompatible matrix dimensions {tensor.shape} and {matrix.shape}"
+    result                = Tensor(tensor.shape[:-1] + [out_features])
+    total_number_of_elems = len(result.data) # we don't really care about the actual shape, for this we know that the tensor is an array of input features
+    for s in range(total_number_of_elems // out_features):
+        for i in range(out_features):
+            for j in range(in_features):
+                result.data[s * out_features + i] += tensor.data[s * in_features + j] * matrix.data[i * in_features + j]
+
+    return result
+
+def tensor_outer_product(tensor_a, tensor_b):
+    in_features   = tensor_a.shape[-1]
+    out_features  = tensor_b.shape[-1]
+    result_shape  = [out_features, in_features] # tensor_a.shape[:-1] + [out_features, in_features]
+    result        = Tensor(result_shape)
+    total_number_of_elems_a = len(tensor_a.data) # we don't really care about the actual shape, for this we know that the tensor is an array of input features
+    total_number_of_elems_b = len(tensor_b.data) # we don't really care about the actual shape, for this we know that the tensor is an array of output features
+    assert total_number_of_elems_a // in_features == total_number_of_elems_b // out_features, "Incompatible tensor dimensions for outer product"
+    for s in range(total_number_of_elems_a // in_features):
+        for i in range(out_features):
+            for j in range(in_features):
+                # s * in_features * out_features + 
+                result.data[i * in_features + j] += tensor_a.data[s * in_features + j] * tensor_b.data[s * out_features + i]
+
+    return result
+
+class VectorMatrixMultiply(AutoGradNode):
+    def __init__(self, tensor, matrix):
+        assert tensor.shape[-1] == matrix.shape[1], "Incompatible matrix dimensions"
+        super().__init__(shape=tensor.shape[:-1] + [matrix.shape[0]])
+        self.tensor = tensor
+        self.matrix = matrix
+        self.dependencies = [tensor, matrix]
+
+    def materialize(self):
+        tensor                = self.tensor.materialize()
+        matrix                = self.matrix.materialize()
+        return tensor_matrix_multiply(tensor, matrix)
+
+    def _backward(self):
+        # print(f"VectorMatrixMultiply backward")
+        # print(f"grad : {self.grad}")
+        # print(f"tensor : {self.tensor.materialize()}")
+        # print(f"matrix : {self.matrix.materialize()}")
+        # print(f"mT : {mT.materialize()}")
+        mT               = self.matrix.transposed()
+        tmp              = tensor_matrix_multiply(self.grad, mT.materialize())
+        self.tensor.grad = self.tensor.grad + tmp
+        self.matrix.grad = self.matrix.grad + tensor_outer_product(self.tensor.materialize(), self.grad)
+
+class LeakyRelu(AutoGradNode):
+    def __init__(self, a, negative_slope=0.01):
+        super().__init__(shape=a.shape)
+        self.a              = a
+        self.negative_slope = negative_slope
+        self.dependencies   = [a]
+
+    def materialize(self):
+        x      = self.a.materialize()
+        result = Tensor(x.shape)
+        for i in range(len(x.data)):
+            result.data[i] = x.data[i] if x.data[i] > 0 else self.negative_slope * x.data[i]
+        return result
+
+    def _backward(self):
+        am    = self.a.materialize()
+        slope = Tensor(self.a.shape)
+        for i in range(len(am.data)):
+            slope.data[i] = 1.0 if am.data[i] > 0.0 else self.negative_slope
+        self.a.grad = self.a.grad + self.grad * slope
+
 class Reduce(AutoGradNode):
     def __init__(self, a, op='+'):
         super().__init__(shape=[1,])
@@ -370,33 +462,116 @@ class Mul(AutoGradNode):
         self.a.grad = self.a.grad + self.grad * self.b.materialize()
         self.b.grad = self.b.grad + self.grad * self.a.materialize()
 
-a = LearnableParameter(shape=[3,])
-b = LearnableParameter(shape=[3,])
+class Sin(AutoGradNode):
+    def __init__(self, a):
+        super().__init__(shape=a.shape)
+        self.a            = a
+        self.dependencies = [a]
+
+    def materialize(self):
+        ma = self.a.materialize()
+        result = Tensor(ma.shape)
+        for i in range(len(ma.data)):
+            result.data[i] = math.sin(ma.data[i])
+        return result
+
+    def _backward(self):
+        ma = self.a.materialize()
+        for i in range(len(ma.data)):
+            self.a.grad.data[i] = self.a.grad.data[i] + self.grad.data[i] * math.cos(ma.data[i])
+
+num_nodes = 64
+m0 = Matrix(in_channels=1, out_features=num_nodes)
+b0 = LearnableParameter(shape=[num_nodes,]) # bias
+m1 = Matrix(in_channels=num_nodes, out_features=num_nodes)
+b1 = LearnableParameter(shape=[num_nodes,]) # bias
+m2 = Matrix(in_channels=num_nodes, out_features=1)
+b2 = LearnableParameter(shape=[1,]) # bias
+
+def eval_mlp(x):
+    z    = VectorMatrixMultiply(tensor=x, matrix=m0)
+    z    = z + b0
+    z    = LeakyRelu(z, negative_slope=0.1)
+    z    = VectorMatrixMultiply(tensor=z, matrix=m1)
+    z    = z + b1
+    z    = LeakyRelu(z, negative_slope=0.1)
+    z    = VectorMatrixMultiply(tensor=z, matrix=m2)
+    z    = z + b2
+    return z
+
+def eval_target(x):
+    return Square(x) * Constant(tensor_from_list([2.777, ])) + Constant(tensor_from_list([0.123,])) - x * x * x * Constant(tensor_from_list([1.5,])) + Sin(x * Constant(tensor_from_list([4.0,])))
+
+class AdamW:
+    """
+        Simple AdamW without variance bias correction
+    """
+    def __init__(self, parameters, lr=0.001, betas=(0.9, 0.999), weight_decay=0.01):
+        self.parameters = parameters
+        self.lr = lr
+        self.betas = betas
+        self.weight_decay = weight_decay
+        self.moments_1 = []
+        self.moments_2 = []
+        for p in parameters:
+            self.moments_1.append(Tensor(p.grad.shape))
+            self.moments_2.append(Tensor(p.grad.shape))
+
+        
+    def step(self):
+        for i, p in enumerate(self.parameters):
+            self.moments_1[i] = self.moments_1[i] * self.betas[0] + p.grad * (1 - self.betas[0])
+            self.moments_2[i] = self.moments_2[i] * self.betas[1] + (p.grad * p.grad) * (1 - self.betas[1])
+            variance = self.moments_2[i] - self.moments_1[i] * self.moments_1[i]
+            for didx in range(len(p.values.data)):
+                p.values.data[didx] -= self.lr * self.moments_1[i].data[didx] / (variance.data[didx] ** 0.5 + 1e-8)
+                p.values.data[didx] -= self.weight_decay * self.lr * p.values.data[didx]
+
+adamw = AdamW(parameters=[m0, b0, m1, b1, m2, b2], lr=0.001, weight_decay=0.001, betas=(0.9, 0.9))
 
 for epoch in range(3000):
 
-    x = Variable(tensor_from_list([random.random(), random.random(), random.random()]), name="x")
-    z = Square(x) * a + b
-    loss = Reduce(Square(z - (Square(x) * Constant(tensor_from_list([1.777, 1.333, 0.333])) + Constant(tensor_from_list([1.55, 0.0, -1.666]))))) # L2 loss to Ax^2+B
+    x    = Variable(tensor_from_list([random.random() * 2.0 - 1.0,]), name="x")
+    mlp  = eval_mlp(x)
+    loss = Reduce(Square(mlp - eval_target(x))) # L2 loss to Ax^2+B
 
-    print(f"Epoch {epoch}: loss = {loss.materialize()}; a = {a.materialize()}, b = {b.materialize()}")
+    print(f"Epoch {epoch}: loss = {loss.materialize()};")
     # Backward pass
     # Gradient reset happens internally in the backward pass
     loss.backward()
 
-    # Update parameters
-    learning_rate = 0.01333
-
-    for node in [a, b]:
-        # print(f"grad = {node.grad}")
-        for i in range(len(node.grad.data)):
-            node.values.data[i] -= learning_rate * node.grad.data[i]
+    adamw.step()
 
 with open(".tmp/graph.dot", "w") as f:
     f.write(loss.pretty_print_dot_graph())
 
 
+# Plot our mlp
+import matplotlib.pyplot as plt
+
+max_range = 100
+x_test_vals = [(i / max_range - 1.0) for i in range(2 * max_range)]
+y_test_vals = []
+for x in x_test_vals:
+    y_test_vals.append(eval_mlp(Variable(tensor_from_list([x,]), name="x")).materialize().data[0])
+
+x_ref_vals = [(i / max_range - 1.0) for i in range(2 * max_range)]
+y_ref_vals = []
+for x in x_ref_vals:
+    y_ref_vals.append(eval_target(Variable(tensor_from_list([x,]), name="x")).materialize().data[0])
+
+plt.plot(x_test_vals, y_test_vals, label="MLP")
+plt.plot(x_ref_vals, y_ref_vals, label="Target", linestyle="--")
+plt.xlabel("X")
+plt.ylabel("Y")
+plt.show()
+
+
 ```
+
+After a few minutes you should get this plot:
+
+![](/assets/compute_graph/mlp_0.png)
 
 
 <script src="https://utteranc.es/client.js"

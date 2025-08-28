@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  "Adding vector support to the toy AutoGrad"
+title:  "Adding vector support to AutoGrad"
 
 date:   2025-08-24 01:00:00 +0000
 categories: jekyll update
