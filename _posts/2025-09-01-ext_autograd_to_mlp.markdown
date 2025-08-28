@@ -22,7 +22,7 @@ categories: jekyll update
 
 # Post
 
-In the previous [post](https://aschrein.github.io/jekyll/update/2025/08/24/ext_autograd_to_tensors.html) I've added support for tensors to the toy automatic differentiation system. Tensors are basically a linear array with a rule to access it in a multi-dimensional fasion.
+In the previous [post](https://aschrein.github.io/jekyll/update/2025/08/26/ext_autograd_to_tensors.html) I've added support for tensors to the toy automatic differentiation system. Tensors are basically a linear array with a rule to access it in a multi-dimensional fasion.
 
 In this update I'll extend it to handle MLPs. And for that we need to add a linear layer aka matrix multiplication.
 First thing we add is a Matrix class, right next to the learnable parameter class. Its job is to own a array of learnable parameters [out_features, in_channels]. The way it works in this setup is that we don't care about the actual shape of the tensor, all we need to know is that it is an array of N * [in_features], then what we do is we multiply each such array by the matrix and the result is a new array of N * [out_features].
