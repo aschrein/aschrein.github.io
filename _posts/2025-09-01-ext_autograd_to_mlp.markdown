@@ -573,6 +573,7 @@ After a few minutes you should get this plot:
 
 ![](/assets/compute_graph/mlp_0.png)
 
+The dotted line represents the target function we are trying to learn, while the solid line represents the output of our MLP. As you can see, the MLP is able to learn the target function quite well.
 
 <script src="https://utteranc.es/client.js"
         repo="aschrein/aschrein.github.io"
