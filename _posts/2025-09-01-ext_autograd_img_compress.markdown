@@ -530,7 +530,7 @@ class Broadcast(AutoGradNode):
 
 num_input_features = 64
 num_nodes          = 64
-batch_size         = 256
+batch_size         = 64
 num_epochs         = 32000
 m0 = Matrix(in_channels=num_input_features, out_features=num_nodes)
 b0 = LearnableParameter(shape=[1, num_nodes,]) # bias
@@ -587,7 +587,7 @@ class AdamW:
             p.values.data    -= self.lr * self.moments_1[i].data / (np.abs(variance.data) ** 0.5 + 1e-8)
             p.values.data    -= self.weight_decay * self.lr * p.values.data
 
-adamw = AdamW(parameters=[m0, b0, m1, b1, m2, b2, m3, b3], lr=0.000333, weight_decay=0.01, betas=(0.92, 0.95))
+adamw = AdamW(parameters=[m0, b0, m1, b1, m2, b2, m3, b3], lr=0.000533, weight_decay=0.01, betas=(0.92, 0.95))
 
 import matplotlib.image as image
 ref = image.imread("mlp_compression/assets/mandrill.png")
@@ -604,10 +604,10 @@ for epoch in range(num_epochs):
 
         # Frequency encoding
         for i in range(num_input_features // 4):
-            x_data[b, i * 4 + 0] = math.sin(pixel_x * (2.0 ** i) * math.pi / ref.shape[0])
-            x_data[b, i * 4 + 1] = math.cos(pixel_x * (2.0 ** i) * math.pi / ref.shape[0])
-            x_data[b, i * 4 + 2] = math.sin(pixel_y * (2.0 ** i) * math.pi / ref.shape[1])
-            x_data[b, i * 4 + 3] = math.cos(pixel_y * (2.0 ** i) * math.pi / ref.shape[1])
+            x_data[b, i * 4 + 0] = math.sin(pixel_x * (2.0 ** (i + 1)) * math.pi / ref.shape[0])
+            x_data[b, i * 4 + 1] = math.cos(pixel_x * (2.0 ** (i + 1)) * math.pi / ref.shape[0])
+            x_data[b, i * 4 + 2] = math.sin(pixel_y * (2.0 ** (i + 1)) * math.pi / ref.shape[1])
+            x_data[b, i * 4 + 3] = math.cos(pixel_y * (2.0 ** (i + 1)) * math.pi / ref.shape[1])
 
         y_data[b, 0] = ref[pixel_x, pixel_y, 0]
         y_data[b, 1] = ref[pixel_x, pixel_y, 1]
@@ -615,7 +615,7 @@ for epoch in range(num_epochs):
 
     x    = Variable(Tensor(shape=[batch_size, num_input_features], data=x_data), name="x")
     mlp  = eval_mlp(x)
-    loss = Reduce(Abs(mlp - Constant(Tensor(shape=[batch_size, 3], data=y_data))) + Square(mlp - Constant(Tensor(shape=[batch_size, 3], data=y_data))))
+    loss = Reduce(Square(mlp - Constant(Tensor(shape=[batch_size, 3], data=y_data))))
     
     if epoch == 0:
         with open(".tmp/graph.dot", "w") as f:
@@ -629,7 +629,7 @@ for epoch in range(num_epochs):
 
     adamw.step()
 
-    adamw.lr *= 0.9999
+    adamw.lr *= 0.99999
 
 
 # Plot our mlp
@@ -643,10 +643,10 @@ for pixel_x in range(size):
     for pixel_y in range(size):
         # Frequency encoding
         for i in range(num_input_features // 4):
-            x_data[pixel_x, pixel_y, i * 4 + 0] = math.sin(pixel_x * (2.0 ** i) * math.pi / size)
-            x_data[pixel_x, pixel_y, i * 4 + 1] = math.cos(pixel_x * (2.0 ** i) * math.pi / size)
-            x_data[pixel_x, pixel_y, i * 4 + 2] = math.sin(pixel_y * (2.0 ** i) * math.pi / size)
-            x_data[pixel_x, pixel_y, i * 4 + 3] = math.cos(pixel_y * (2.0 ** i) * math.pi / size)
+            x_data[pixel_x, pixel_y, i * 4 + 0] = math.sin(pixel_x * (2.0 ** (i + 1)) * math.pi / size)
+            x_data[pixel_x, pixel_y, i * 4 + 1] = math.cos(pixel_x * (2.0 ** (i + 1)) * math.pi / size)
+            x_data[pixel_x, pixel_y, i * 4 + 2] = math.sin(pixel_y * (2.0 ** (i + 1)) * math.pi / size)
+            x_data[pixel_x, pixel_y, i * 4 + 3] = math.cos(pixel_y * (2.0 ** (i + 1)) * math.pi / size)
 
 x_data = x_data.reshape((size * size, num_input_features))
 x    = Variable(Tensor(shape=[size * size, num_input_features], data=x_data), name="x")
