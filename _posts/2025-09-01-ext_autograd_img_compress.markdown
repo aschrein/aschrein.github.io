@@ -1,8 +1,8 @@
 ---
 layout: post
-title:  "Implement image compression using AutoGrad"
+title:  "Image encoding using AutoGrad"
 
-date:   2025-08-28 01:00:00 +0000
+date:   2025-08-29 01:00:00 +0000
 categories: jekyll update
 ---
 
@@ -38,11 +38,11 @@ Basically we reshape everything into [N, C] where C is the number of channels (e
 
 This will enable us to have more heavy weight training. In particular, we can now use larger batch sizes and more complex models without waiting for ages.
 
-Our approach for image compression here is to have an MLP that converts a feature vector with frequency encoding into color value. Frequency encoding is a way to encode absolute pixel positions, you could think of it as smooth bits, if you have an integer series 1, 2, 3, ... N-1 in the binary form it will be [0b0000, 0b0001, 0b0010, ..., 0b1111] for N=16. You can notice that the frequency of each bit is halfed, for neural networks we'd like to add smoothness so that it can generalize. For that we use sin+cos of doubling frequncy for each band.
+Our approach for image encoding here is to have an MLP that converts a feature vector with frequency encoding into color value. Frequency encoding is a way to encode absolute pixel positions, you could think of it as smooth bits, if you have an integer series 1, 2, 3, ... N-1 in the binary form it will be [0b0000, 0b0001, 0b0010, ..., 0b1111] for N=16. You can notice that the frequency of each bit is halfed, for neural networks we'd like to add smoothness so that it can generalize. For that we use sin+cos of doubling frequncy for each band.
 
 After that we assemble a group of pixels for a batch and initialize the feature vectors for them and finally pass them through the MLP for training.
 
-At the end after a few minutes we can see the compression results.
+At the end after a few minutes we can see the encoding results.
 
 ![](/assets/compute_graph/mlp_img_0.png)
 
