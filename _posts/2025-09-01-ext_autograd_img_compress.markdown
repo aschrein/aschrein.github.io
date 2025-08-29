@@ -2,7 +2,7 @@
 layout: post
 title:  "Implement image compression using AutoGrad"
 
-date:   2025-08-28 01:00:00 +0000
+date:   2025-08-29 01:00:00 +0000
 categories: jekyll update
 ---
 
