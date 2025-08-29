@@ -45,7 +45,10 @@ At the end after a few minutes we can see the encoding results.
 
 ![](/assets/compute_graph/mlp_img_0.png)
 
-Not too bad for 4 layers. Original:
+Not too bad for 4 layers.
+You can take a look at the live WebGPU version of the same approach that I've implemented [here](https://aschrein.github.io/mlp_compression/).
+
+Original:
 
 ![](/mlp_compression/assets/mandrill.png)
 
