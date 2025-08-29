@@ -39,7 +39,7 @@ Basically we reshape everything into [N, C] where C is the number of channels (e
 This will enable us to have more heavy weight training. In particular, we can now use larger batch sizes and more complex models without waiting for ages.
 
 Our approach for image encoding here is to have an MLP that converts a feature vector with frequency encoding into color value. 
-After that we assemble a group of pixels for a batch and initialize the feature vectors for them and finally pass them through the MLP for training.
+After that we assemble a group of pixels for a batch and initialize the feature vectors for them and finally pass them through the MLP for training. Then for inference we assemble all the pixels into a large batch i.e. [height, width, channels] -> [height * width, channels] and then after MLP we reshape back to [height, width, RGB].
 
 At the end after a few minutes we can see the encoding results.
 
