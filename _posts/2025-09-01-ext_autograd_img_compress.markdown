@@ -38,8 +38,7 @@ Basically we reshape everything into [N, C] where C is the number of channels (e
 
 This will enable us to have more heavy weight training. In particular, we can now use larger batch sizes and more complex models without waiting for ages.
 
-Our approach for image encoding here is to have an MLP that converts a feature vector with frequency encoding into color value. Frequency encoding is a way to encode absolute pixel positions, you could think of it as smooth bits, if you have an integer series 1, 2, 3, ... N-1 in the binary form it will be [0b0000, 0b0001, 0b0010, ..., 0b1111] for N=16. You can notice that the frequency of each bit is halfed, for neural networks we'd like to add smoothness so that it can generalize. For that we use sin+cos of doubling frequncy for each band.
-
+Our approach for image encoding here is to have an MLP that converts a feature vector with frequency encoding into color value. 
 After that we assemble a group of pixels for a batch and initialize the feature vectors for them and finally pass them through the MLP for training.
 
 At the end after a few minutes we can see the encoding results.
@@ -51,6 +50,12 @@ Not too bad for 4 layers. Original:
 ![](/mlp_compression/assets/mandrill.png)
 
 As a bonus we can resample the image to a grid of an arbitrary resolution because of how we structured the MLP.
+
+Frequency encoding is a way to encode absolute pixel positions, you could think of it as smooth bits, if you have an integer series 1, 2, 3, ... N-1 in the binary form it will be [0b0000, 0b0001, 0b0010, ..., 0b1111] for N=16. You can notice that the frequency of each bit is halfed, for neural networks we'd like to add smoothness so that it can generalize. For that we use sin+cos of doubling frequency for each band.
+
+![](/assets/compute_graph/fenc_0.png)
+
+[Source](https://huggingface.co/blog/designing-positional-encoding)
 
 Source Code:
 
@@ -650,6 +655,16 @@ plt.show()
 
 
 ```
+
+# Links
+
+[1][You could have designed state of the art positional encoding][1]
+
+[1]: https://huggingface.co/blog/designing-positional-encoding
+
+[2][Jakub Boksansky: Deep Learning Crash Course][2]
+
+[2]: https://gpuopen.com/learn/deep_learning_crash_course/
 
 <script src="https://utteranc.es/client.js"
         repo="aschrein/aschrein.github.io"
