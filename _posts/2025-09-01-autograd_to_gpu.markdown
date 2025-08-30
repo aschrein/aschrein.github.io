@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  "Run AutoGrad on GPU"
+title:  "Running AutoGrad on GPU"
 
 date:   2025-08-30 01:00:00 +0000
 categories: jekyll update
