@@ -1430,7 +1430,7 @@ if 0: # validation
 
 num_input_features = 64
 num_nodes          = 64
-batch_size         = 512
+batch_size         = 256
 num_epochs         = 10000
 m0 = Matrix(in_channels=num_input_features, out_features=num_nodes)
 b0 = LearnableParameter(shape=[1, num_nodes,]) # bias
@@ -1473,9 +1473,9 @@ def eval_target(x):
 adamw = AdamW(parameters=[m0, b0, m1, b1, m2, b2, m3, b3], lr=0.000533, weight_decay=0.01, betas=(0.92, 0.95))
 
 import matplotlib.image as image
-ref = image.imread("mlp_compression/assets/mandrill.png")
+ref = image.imread("mlp_compression/assets/kodim23.png")[0:512, 0:512, 0:3]
 
-assert ref.shape == (512, 512, 4)
+assert ref.shape == (512, 512, 3), f"Unexpected reference image shape: {ref.shape}"
 
 print(f"Reference image shape: {ref.shape}")
 
@@ -1562,6 +1562,8 @@ plt.show()
 
 
 ```
+
+![](/assets/compute_graph/mlp_img_1.png)
 
 # Links
 
