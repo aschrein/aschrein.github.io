@@ -24,7 +24,7 @@ categories: jekyll update
 
 In the previous [post](https://aschrein.github.io/jekyll/update/2025/08/29/ext_autograd_img_compress.html) I've implemented an MLP image encoder using the toy AutoGrad framework. In this post I will add a simple naive GPU inference and backpropagation runtime. The goal is a theoretic excercise rather than optimizations, at first. Naive implementation doesn't run faster on a GPU because of excessive memory transfers, command queue flushes, dynamic memory allocation and lack of a good parallel scheduler for the compute graph.
 
-For implementation I'm going to be using PyOpenCL. OpenCL is quite old and not widely used for ultra performance, but it's still somewhat portable across different platforms. The only issue is I'm not sure what's the status of fp32 atomics and support for lower bit types that we all love(fp16, fp8e3m4).
+For implementation I'm going to be using PyOpenCL. OpenCL is quite old and not widely used for ultra performance, but it's still somewhat portable across different platforms. The only issue is I'm not sure what's the status of fp32 atomics and support for lower bit types that we all love(fp16, fp8 e4m3).
 
 First off we'd need to implement all the kernels for common operations: Add, Mul, Div, MatrixMultiply, OuterProduct etc. Then we just replace numpy arrays with cl.Buffers and then for each operation during _materialize() we simply dispatch a kernel in eager mode, meaning that we just dispatch as we go without fusing/scheduling. Also we allocate a new buffer on each operation dynamically, which obviously murders the performance - but that's fine for a first functional implementation.
 
