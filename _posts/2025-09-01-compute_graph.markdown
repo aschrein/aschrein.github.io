@@ -487,6 +487,32 @@ $$
 
 What it does is makes it easier for the network to learn quadratic relationships x * y in just one layer \[[4]\] whereas with a normal MLP+relu you'd need 3 layers to learn that relationship.
 
+# Broadcast
+
+Another major feature of PyTorch is broadcasting, which allows tensors of different shapes to be used together in arithmetic operations. This is particularly useful when you want to apply a scalar value or a smaller tensor across a larger tensor without explicitly replicating the data.
+
+For example, if you have a tensor of shape (3, 4) and you want to add a tensor of shape (4,) to it, PyTorch will automatically broadcast the smaller tensor across the larger one:
+
+```python
+import torch
+
+a = torch.randn(3, 4)
+b = torch.randn(4)
+c = a + b  # b is broadcasted to shape (3, 4)
+```
+
+But what happens with the gradient? The gradients are being summed(reduced) across the broadcasted dimensions during backpropagation.
+
+Lets say we have a scalar value x, then we broadcast it to be a vector [x, x, ... x] and then use it in a larger tensor operation. During backpropagation, the gradient for this operation will be computed as if the scalar was used in each element of the vector.
+
+$$
+\frac{\partial L}{\partial x} = \sum_{i} \frac{\partial L}{\partial y_i} \cdot \frac{\partial y_i}{\partial x}
+$$
+
+![](/assets/compute_graph/broadcast_0.png)
+
+This is very powerfull and something to keep in mind when designing your models. In general broadcasting is effectively the same as using a single node multiple times in different parts of the computation graph.
+
 # Detach
 
 Detaching a tensor from the computation graph is useful when you want to stop tracking gradients for a particular tensor. This can be done using the .detach() method or torch.no_grad(). This will create a new tensor that shares the same data but will not propagate gradients and will act as a constant value during backpropagation.

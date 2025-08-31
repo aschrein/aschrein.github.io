@@ -3,8 +3,12 @@ layout: page
 title: About
 permalink: /about/
 ---
+# About
 
-## Work experience:
+My name is Anton, I am a software engineer with over a decade of experience working on various computer graphics problems.
+I enjoy playing Apex legends in my free time and sometimes updating this blog. In the last couple of years I started exploring the realm of machine learning and its applications in graphics.
+
+# Work experience:
 #### February 2021 - Now (100% Remote) [AMD](https://www.amd.com/en)
   * Leading an effort on denoising.
   * Some internal tooling for testing/capture/replay/rapid prototyping/perf analysis.
