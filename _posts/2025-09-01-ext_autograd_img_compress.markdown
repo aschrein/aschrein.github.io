@@ -87,7 +87,12 @@ We're using a basic rule of linear strides.
 class Tensor:
     def __init__(self, shape, data=None):
         self.shape   = shape
-        self.data    = data.flatten()[:] if data is not None else make_array(dims_get_total(shape))
+        if data is not None:
+            if not isinstance(data, np.ndarray):
+                data = np.array(data, dtype=np.float32)
+            self.data    = data.flatten()[:]
+        else:
+            self.data    = make_array(dims_get_total(shape))
         self.strides = []
         self._compute_strides()
 
@@ -528,40 +533,6 @@ class Broadcast(AutoGradNode):
         for i in range(N):
             self.a.grad.data = self.a.grad.data + self.grad.data[i * len(self.a.grad.data):(i + 1) * len(self.a.grad.data)]
 
-num_input_features = 64
-num_nodes          = 64
-batch_size         = 64
-num_epochs         = 32000
-m0 = Matrix(in_channels=num_input_features, out_features=num_nodes)
-b0 = LearnableParameter(shape=[1, num_nodes,]) # bias
-m1 = Matrix(in_channels=num_nodes, out_features=num_nodes)
-b1 = LearnableParameter(shape=[1, num_nodes,]) # bias
-m2 = Matrix(in_channels=num_nodes, out_features=num_nodes)
-b2 = LearnableParameter(shape=[1, num_nodes]) # bias
-m3 = Matrix(in_channels=num_nodes, out_features=3)
-b3 = LearnableParameter(shape=[1, 3]) # bias
-
-def broadcast_to_batch(node, batch_size):
-    return Broadcast(node, dim=0, size=batch_size)
-
-def eval_mlp(x):
-    batch_size = x.shape[0]
-    z    = VectorMatrixMultiply(tensor=x, matrix=m0)
-    z    = z + broadcast_to_batch(b0, batch_size)
-    z    = LeakyRelu(z, negative_slope=0.1)
-    z    = VectorMatrixMultiply(tensor=z, matrix=m1)
-    z    = z + broadcast_to_batch(b1, batch_size)
-    z    = LeakyRelu(z, negative_slope=0.1)
-    z    = VectorMatrixMultiply(tensor=z, matrix=m2)
-    z    = z + broadcast_to_batch(b2, batch_size)
-    z    = LeakyRelu(z, negative_slope=0.1)
-    z    = VectorMatrixMultiply(tensor=z, matrix=m3)
-    # z    = z + broadcast_to_batch(b3, batch_size)
-    # z    = LeakyRelu(z, negative_slope=0.01)
-    return z
-
-def eval_target(x):
-    return x * x * 2.777 + 0.624 - x * x * x * 0.333 + np.sin(x * 5.0) * 0.777
 
 class AdamW:
     """
@@ -584,8 +555,75 @@ class AdamW:
             self.moments_1[i] = self.moments_1[i] * self.betas[0] + p.grad * (1 - self.betas[0])
             self.moments_2[i] = self.moments_2[i] * self.betas[1] + (p.grad * p.grad) * (1 - self.betas[1])
             variance          = self.moments_2[i] - self.moments_1[i] * self.moments_1[i]
-            p.values.data    -= self.lr * self.moments_1[i].data / (np.abs(variance.data) ** 0.5 + 1e-8)
+            p.values.data    -= self.lr * self.moments_1[i].data / (np.sqrt(self.moments_2[i].data) + 1e-8)
             p.values.data    -= self.weight_decay * self.lr * p.values.data
+
+
+if 0:
+
+    a = LearnableParameter(shape=[1, 3])
+    b = LearnableParameter(shape=[1, 3])
+    m0 = Matrix(in_channels=3, out_features=3)
+
+    adamw = AdamW(parameters=[a, b, m0], lr=0.01333, weight_decay=0.0, betas=(0.9, 0.999))
+
+    for epoch in range(3000):
+
+        x = Variable(Tensor(shape=[1, 3], data=[[random.random(), random.random(), random.random()]]), name="x")
+        y = VectorMatrixMultiply(Square(x), m0)  + b
+        loss = Reduce(Square(y - (Square(x) * Constant(Tensor(shape=[1, 3], data=[[1.777, 1.333, 0.333]])) + Constant(Tensor(shape=[1, 3], data=[[1.55, 0.0, -1.666]]))))) # L2 loss to Ax^2+B
+
+        print(f"Epoch {epoch}: loss = {loss.materialize().data[0]}; a = {a.materialize().data}, b = {b.materialize().data}, \nm0 = \n{m0.materialize().data.reshape(3, 3)}")
+        # Backward pass
+        # Gradient reset happens internally in the backward pass
+        loss.backward()
+
+        adamw.step()
+
+    exit()
+
+num_input_features = 64
+num_nodes          = 64
+batch_size         = 64
+num_epochs         = 32000
+m0 = Matrix(in_channels=num_input_features, out_features=num_nodes)
+b0 = LearnableParameter(shape=[1, num_nodes,]) # bias
+m1 = Matrix(in_channels=num_nodes, out_features=num_nodes)
+b1 = LearnableParameter(shape=[1, num_nodes,]) # bias
+m2 = Matrix(in_channels=num_nodes, out_features=num_nodes)
+b2 = LearnableParameter(shape=[1, num_nodes]) # bias
+m3 = Matrix(in_channels=num_nodes, out_features=3)
+b3 = LearnableParameter(shape=[1, 3]) # bias
+
+def broadcast_to_batch(node, batch_size):
+    return Broadcast(node, dim=0, size=batch_size)
+
+def broadcast_rgb_mul(k, batch_size):
+    n = np.zeros((batch_size, 3), dtype=np.float32)
+    n[:, 0] = k
+    n[:, 1] = k
+    n[:, 2] = k
+    return n
+
+def eval_mlp(x):
+    batch_size = x.shape[0]
+    z    = VectorMatrixMultiply(tensor=x, matrix=m0)
+    z    = z + broadcast_to_batch(b0, batch_size)
+    z    = LeakyRelu(z, negative_slope=0.1)
+    z    = VectorMatrixMultiply(tensor=z, matrix=m1)
+    z    = z + broadcast_to_batch(b1, batch_size)
+    z    = LeakyRelu(z, negative_slope=0.1)
+    z    = VectorMatrixMultiply(tensor=z, matrix=m2)
+    z    = z + broadcast_to_batch(b2, batch_size)
+    z    = LeakyRelu(z, negative_slope=0.1)
+    z    = VectorMatrixMultiply(tensor=z, matrix=m3)
+    # z    = z + broadcast_to_batch(b3, batch_size)
+    # z    = LeakyRelu(z, negative_slope=0.01)
+    return z
+
+def eval_target(x):
+    return x * x * 2.777 + 0.624 - x * x * x * 0.333 + np.sin(x * 5.0) * 0.777
+
 
 adamw = AdamW(parameters=[m0, b0, m1, b1, m2, b2, m3, b3], lr=0.000533, weight_decay=0.01, betas=(0.92, 0.95))
 
@@ -594,28 +632,47 @@ ref = image.imread("mlp_compression/assets/mandrill.png")
 
 print(f"Reference image shape: {ref.shape}")
 
+# Initialize all the feature vectors for every pixel on the image
+size   = 512
+x_data = np.zeros((size, size, num_input_features), dtype=np.float32)
+
+print(f"Initializing the grid...")
+# for pixel_x in range(size):
+#     for pixel_y in range(size):
+#         # Frequency encoding
+#         for i in range(num_input_features // 4):
+#             x_data[pixel_x, pixel_y, i * 4 + 0] = math.sin(pixel_x * (2.0 ** (i + 1)) * math.pi / size)
+#             x_data[pixel_x, pixel_y, i * 4 + 1] = math.cos(pixel_x * (2.0 ** (i + 1)) * math.pi / size)
+#             x_data[pixel_x, pixel_y, i * 4 + 2] = math.sin(pixel_y * (2.0 ** (i + 1)) * math.pi / size)
+#             x_data[pixel_x, pixel_y, i * 4 + 3] = math.cos(pixel_y * (2.0 ** (i + 1)) * math.pi / size)
+
+L      = num_input_features // 4
+xx, yy = np.meshgrid(np.arange(size), np.arange(size))
+freqs  = (2.0 ** (np.arange(L) + 1)) * np.pi / size
+x_sin = np.sin(yy[:, :, None] * freqs[None, None, :])
+x_cos = np.cos(yy[:, :, None] * freqs[None, None, :])
+y_sin = np.sin(xx[:, :, None] * freqs[None, None, :])
+y_cos = np.cos(xx[:, :, None] * freqs[None, None, :])
+stacked = np.stack([x_sin, x_cos, y_sin, y_cos], axis=-1)
+x_data[:] = stacked.reshape(size, size, -1)
+
+
 for epoch in range(num_epochs):
-    x_data = np.zeros((batch_size, num_input_features), dtype=np.float32)
+    _x_data = np.zeros((batch_size, num_input_features), dtype=np.float32)
     y_data = np.zeros((batch_size, 3), dtype=np.float32)
 
     for b in range(batch_size):
-        pixel_x = int(random.random() * ref.shape[0])
-        pixel_y = int(random.random() * ref.shape[1])
-
-        # Frequency encoding
-        for i in range(num_input_features // 4):
-            x_data[b, i * 4 + 0] = math.sin(pixel_x * (2.0 ** (i + 1)) * math.pi / ref.shape[0])
-            x_data[b, i * 4 + 1] = math.cos(pixel_x * (2.0 ** (i + 1)) * math.pi / ref.shape[0])
-            x_data[b, i * 4 + 2] = math.sin(pixel_y * (2.0 ** (i + 1)) * math.pi / ref.shape[1])
-            x_data[b, i * 4 + 3] = math.cos(pixel_y * (2.0 ** (i + 1)) * math.pi / ref.shape[1])
-
+        pixel_x      = int(random.random() * ref.shape[0])
+        pixel_y      = int(random.random() * ref.shape[1])
+        _x_data[b]   = x_data[pixel_x, pixel_y]
         y_data[b, 0] = ref[pixel_x, pixel_y, 0]
         y_data[b, 1] = ref[pixel_x, pixel_y, 1]
         y_data[b, 2] = ref[pixel_x, pixel_y, 2]
 
-    x    = Variable(Tensor(shape=[batch_size, num_input_features], data=x_data), name="x")
+    x    = Variable(Tensor(shape=[batch_size, num_input_features], data=_x_data), name="x")
     mlp  = eval_mlp(x)
-    loss = Reduce(Square(mlp - Constant(Tensor(shape=[batch_size, 3], data=y_data))))
+    loss = Reduce(Square(mlp - Constant(Tensor(shape=[batch_size, 3], data=y_data))) +
+                    Exp(Abs(mlp - Constant(Tensor(shape=[batch_size, 3], data=y_data)))) * Constant(Tensor(shape=[batch_size, 3], data=broadcast_rgb_mul(0.25, batch_size))), op='+')
     
     if epoch == 0:
         with open(".tmp/graph.dot", "w") as f:
@@ -636,19 +693,6 @@ for epoch in range(num_epochs):
 import matplotlib.pyplot as plt
 
 # render the image
-size   = 256
-x_data = np.zeros((size, size, num_input_features), dtype=np.float32)
-
-for pixel_x in range(size):
-    for pixel_y in range(size):
-        # Frequency encoding
-        for i in range(num_input_features // 4):
-            x_data[pixel_x, pixel_y, i * 4 + 0] = math.sin(pixel_x * (2.0 ** (i + 1)) * math.pi / size)
-            x_data[pixel_x, pixel_y, i * 4 + 1] = math.cos(pixel_x * (2.0 ** (i + 1)) * math.pi / size)
-            x_data[pixel_x, pixel_y, i * 4 + 2] = math.sin(pixel_y * (2.0 ** (i + 1)) * math.pi / size)
-            x_data[pixel_x, pixel_y, i * 4 + 3] = math.cos(pixel_y * (2.0 ** (i + 1)) * math.pi / size)
-
-x_data = x_data.reshape((size * size, num_input_features))
 x    = Variable(Tensor(shape=[size * size, num_input_features], data=x_data), name="x")
 y_data = eval_mlp(x).materialize().data.reshape((size, size, 3))
 
