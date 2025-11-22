@@ -65,7 +65,11 @@ Here are some generated samples after training for about 5k epochs. Nothing impr
 
 ![](/assets/gen_cats/samples.png)
 
-[Code][https://github.com/aschrein/pyd3d12/blob/master/tests/torch/cat_diffusion5.py]
+![](/assets/gen_cats/samples2.png)
+
+![](/assets/gen_cats/samples3.png)
+
+[Code](https://github.com/aschrein/pyd3d12/blob/master/tests/torch/cat_diffusion5.py)
 
 # Links
 
