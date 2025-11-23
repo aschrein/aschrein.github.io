@@ -73,7 +73,7 @@ Later samples > 7k epochs:
 
 ![](/assets/gen_cats2/zoom4.png)
 
-Not bad at all! The model struggled a bit at first but then improved and started generating consistently good samples, but I'm not measuring FID/diversity or anything formal here, just eyeballing it for signs of life. So far it looks interesting.
+Not bad at all! The model struggled a bit at first but then improved and started generating consistently good samples, I'm not measuring FID/diversity or anything formal here, just eyeballing it for the signs of life. There's probably problems with this approach, but so far it looks interesting.
 
 [Code](https://github.com/aschrein/pyd3d12/blob/master/tests/torch/cat_diffusion6.py)
 
