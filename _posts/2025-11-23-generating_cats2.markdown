@@ -57,7 +57,7 @@ LUT:
 
 ![](/assets/gen_cats2/lut2.png)
 
-Samples:
+Eearly samples < 3k epochs:
 
 ![](/assets/gen_cats2/samples2.png)
 
@@ -65,7 +65,15 @@ Zoomed in:
 
 ![](/assets/gen_cats2/zoom2.png)
 
-Not bad at all! It's clear that the model is struggling a bit more now, but I'm not measuring FID/diversity or anything formal here, just eyeballing it for signs of life. So far it looks interesting.
+Later samples > 7k epochs:
+
+![](/assets/gen_cats2/samples3.png)
+
+![](/assets/gen_cats2/zoom3.png)
+
+![](/assets/gen_cats2/zoom4.png)
+
+Not bad at all! The model struggled a bit at first but then improved and started generating consistently good samples, but I'm not measuring FID/diversity or anything formal here, just eyeballing it for signs of life. So far it looks interesting.
 
 [Code](https://github.com/aschrein/pyd3d12/blob/master/tests/torch/cat_diffusion6.py)
 
