@@ -1,0 +1,80 @@
+---
+layout: post
+title:  "Generating Cats with learned lookup tables"
+
+date:   2025-11-23 01:00:00 +0000
+categories: jekyll update
+---
+
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    tex2jax: {
+      skipTags: ['script', 'noscript', 'style', 'textarea', 'pre'],
+      inlineMath: [['$$','$$']]
+    }
+  });
+</script>
+<script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+## Table of contents
+* this unordered seed list will be replaced
+{:toc}
+
+# About
+This is a follow up post to the [previous one](https://aschrein.github.io/jekyll/update/2025/11/22/generating_cats.html) about generating cats with KPN filtering. Here I explore using lookup tables per 8x8 image tokens using a dictionary of 512/64 8x8 patterns.
+
+# Post
+
+I expected this to not work very well, as the expressivity of the model is limited by the size of the dictionary, but surprisingly it works reasonably well and produces recognizable cat images. Also I thought that the LUT dictionary would learn interpreatable patterns, but it seems to just learn some arbitrary basis.
+
+Each 8x8 patch is a softmax sum over the 512 learned patterns, so the model can interpolate between them. The model is trained the same way as before, by lerping to noise and predicting the original image. At inference we run the model iteratively starting from Gaussian noise and gradually unlerping to the predicted image.
+
+LUT:
+
+![](/assets/gen_cats2/lut1.png)
+
+Samples:
+
+![](/assets/gen_cats2/samples.png)
+
+
+Zoomed in:
+
+![](/assets/gen_cats2/zoom1.png)
+
+Actually worked much better than I expected!
+
+After thinking about it a bit more, it makes sense that this works, as the model can learn a dictionary of basis patterns. If we have 8x8 RGB patches, then we have effectively 64x3=192 dimensions per patch. With 512 patterns we more than double the number of basis vectors, so the model is not as limited as I initially thought.
+
+Now the question is how well this would do if we use a limited number of dictionary entries, like 64.
+What I will do as well is penalize off-diagonal entries in the Gram matrix of the learned patterns to encourage orthogonality. And on top of that I will use unnormalized tanh weights for the LUT combination, because softmax doesn't really make sense here, as we don't want the result to be a convex combination necessarily.
+
+Here's the Gram matrix:
+
+![](/assets/gen_cats2/gram.png)
+
+LUT:
+
+![](/assets/gen_cats2/lut2.png)
+
+Samples:
+
+![](/assets/gen_cats2/samples2.png)
+
+Zoomed in:
+
+![](/assets/gen_cats2/zoom2.png)
+
+Not bad at all! It's clear that the model is struggling a bit more now, but I'm not measuring FID/diversity or anything formal here, just eyeballing it for signs of life. So far it looks interesting.
+
+[Code](https://github.com/aschrein/pyd3d12/blob/master/tests/torch/cat_diffusion6.py)
+
+# Links
+
+<script src="https://utteranc.es/client.js"
+        repo="aschrein/aschrein.github.io"
+        issue-term="pathname"
+        theme="github-dark"
+        crossorigin="anonymous"
+        async>
+</script>
