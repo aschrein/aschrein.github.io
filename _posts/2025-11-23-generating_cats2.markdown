@@ -77,6 +77,27 @@ Not bad at all! The model struggled a bit at first but then improved and started
 
 [Code](https://github.com/aschrein/pyd3d12/blob/master/tests/torch/cat_diffusion6.py)
 
+The last experiment I wanted to try is to compute the LUT dynamically by making the model to output a set of vectors that I would use to cook it up as RGB outer products, so it would output N * (3 * 2 * 8) and then each color channel tile would be computed as the outer product of the two 8-d vectors. This would potentially increase the capacity of the model as it could generate more diverse patterns on the fly.
+
+I also added learnable static tokens that are appended to the patch embeddings before feeding them to the transformer, this would allow the model to capture some static information that is shared across all images, like common textures or colors.
+
+< 5k epochs:
+
+![](/assets/gen_cats2/samples4.png)
+
+![](/assets/gen_cats2/zoom5.png)
+
+[Code](https://github.com/aschrein/pyd3d12/blob/master/tests/torch/cat_diffusion7.py)
+
+[>] 10k epochs:
+
+![](/assets/gen_cats2/samples5.png)
+
+![](/assets/gen_cats2/zoom6.png)
+
+[Code](https://github.com/aschrein/pyd3d12/blob/master/tests/torch/cat_diffusion7.py)
+
+
 # Links
 
 <script src="https://utteranc.es/client.js"
