@@ -27,7 +27,7 @@ This is a follow up post to the [previous one](https://aschrein.github.io/jekyll
 
 I expected this to not work very well, as the expressivity of the model is limited by the size of the dictionary, but surprisingly it works reasonably well and produces recognizable cat images. Also I thought that the LUT dictionary would learn interpreatable patterns, but it seems to just learn some arbitrary basis.
 
-Each 8x8 patch is a softmax sum over the 512 learned patterns, so the model can interpolate between them. The model is trained the same way as before, by lerping to noise and predicting the original image. At inference we run the model iteratively starting from Gaussian noise and gradually unlerping to the predicted image.
+Each 8x8 patch is a softmax sum over the 512 learned patterns, so the model can interpolate between them. The model is a patch transfomer with 16 stacked self attention blocks operating on 64 tokens per image(8x8 RGB patch is mapped to a token), it outputs logits or weights of the LUT per 8x8 patch. Each LUT entry is a learnable 8x8 RGB patch that is static during inference. It is trained the same way as before, by lerping to noise and predicting the original image. At inference we run the model iteratively starting from Gaussian noise and gradually unlerping to the predicted image.
 
 LUT:
 
