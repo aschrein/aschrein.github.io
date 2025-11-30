@@ -81,6 +81,23 @@ Results:
 
 This looks quite nice, the sharper kernel helps reduce blur and makes details pop out more. Overall I'm quite happy with how this turned out, it's a neat way to generate cats. Just need to work on reducing the seams a bit more. Naively generating a global set of splats for the whole image seems to be too slow to converge.
 
+I was able to almost completely eliminate seams by evaluating the splats in a 3x3 region - make patches share splats with their neighbors. This increases computation almost 10x but makes the result much better. It needed a slight retraining to make sure everything is balanse.
+
+![](/assets/gen_cats3/zoom_7.png)
+
+![](/assets/gen_cats3/zoom_8.png)
+
+![](/assets/gen_cats3/zoom_9.png)
+
+![](/assets/gen_cats3/zoom_10.png)
+
+![](/assets/gen_cats3/zoom_11.png)
+
+![](/assets/gen_cats3/zoom_12.png)
+
+![](/assets/gen_cats3/zoom_13.png)
+
+![](/assets/gen_cats3/zoom_14.png)
 
 [Code](https://github.com/aschrein/pyd3d12/blob/master/tests/torch/cat_diffusion8.py)
 
