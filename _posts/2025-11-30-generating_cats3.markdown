@@ -57,6 +57,31 @@ Here's an example rendered with splats normalized to be uniform blobs:
 
 As we can see the model tries to make the distribution such that splats match on the boundaries with one splat dominating at the center.
 
+We can experiment with the kernel to make it more artistic/sharper too. As well as the depth falloff(it needs to not have negative lobs for proper blending). Here's an example with a sharper kernel(a notch ugly piecewise function):
+
+![](/assets/gen_cats3/fn_1.png)
+
+Results:
+
+![](/assets/gen_cats3/samples_3.png)
+
+![](/assets/gen_cats3/samples_4.png)
+
+![](/assets/gen_cats3/zoom_1.png)
+
+![](/assets/gen_cats3/zoom_2.png)
+
+![](/assets/gen_cats3/zoom_3.png)
+
+![](/assets/gen_cats3/zoom_4.png)
+
+![](/assets/gen_cats3/zoom_5.png)
+
+![](/assets/gen_cats3/zoom_6.png)
+
+This looks quite nice, the sharper kernel helps reduce blur and makes details pop out more. Overall I'm quite happy with how this turned out, it's a neat way to generate cats. Just need to work on reducing the seams a bit more. Naively generating a global set of splats for the whole image seems to be too slow to converge.
+
+
 [Code](https://github.com/aschrein/pyd3d12/blob/master/tests/torch/cat_diffusion8.py)
 
 # Links
