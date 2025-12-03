@@ -99,6 +99,13 @@ I was able to almost completely eliminate seams by evaluating the splats in a 3x
 
 ![](/assets/gen_cats3/zoom_14.png)
 
+To check how well the model generalizes, I tried to initialize the noise with a 25% signal of a simple sketch to see if it can generate an image close to it. Turns out it's not that good at it, but still not terrible given that it's a small dataset of 64x64 images.
+
+![](/assets/gen_cats3/init_0.png)
+
+![](/assets/gen_cats3/init_1.png)
+
+
 [Code](https://github.com/aschrein/pyd3d12/blob/master/tests/torch/cat_diffusion8.py)
 
 # Links
