@@ -105,6 +105,16 @@ To check how well the model generalizes, I tried to initialize the noise with a 
 
 ![](/assets/gen_cats3/init_1.png)
 
+BTW This is how the denoising targets look like at different noise levels: 
+
+![](/assets/gen_cats3/targets_0.png)
+
+![](/assets/gen_cats3/targets_1.png)
+
+![](/assets/gen_cats3/targets_2.png)
+
+So initially it aims at an 'average cat image' and then gets refined over time with the flow. So as we unlerp to the next target the image is jumping to a slightly different trajectory each time, even tho it's a deterministic process, it's chaotic in nature. 
+
 
 [Code](https://github.com/aschrein/pyd3d12/blob/master/tests/torch/cat_diffusion8.py)
 
